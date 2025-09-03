@@ -1,0 +1,2237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GreenTrack - Digital Waste Management Platform</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2d5a27">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    
+    <!-- Leaflet JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    
+    <!-- Styles -->
+    <style>
+        :root {
+            --primary-color: #2d5a27;
+            --secondary-color: #4caf50;
+            --accent-color: #8bc34a;
+            --error-color: #f44336;
+            --warning-color: #ff9800;
+            --success-color: #4caf50;
+            --background-color: #f5f5f5;
+            --card-background: #ffffff;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --border-color: #e0e0e0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Skip to content for accessibility */
+        .skip-to-content {
+            position: absolute;
+            top: -40px;
+            left: 6px;
+            background: var(--primary-color);
+            color: white;
+            padding: 8px;
+            text-decoration: none;
+            z-index: 1000;
+        }
+
+        .skip-to-content:focus {
+            top: 6px;
+        }
+
+        /* Header */
+        .header {
+            background: var(--primary-color);
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 1rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .nav {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .nav a {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .nav a:hover, .nav a.active {
+            background-color: rgba(255,255,255,0.2);
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            min-height: calc(100vh - 80px);
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card-background);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            background: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .btn:hover {
+            background: var(--secondary-color);
+        }
+
+        .btn:focus {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 2px;
+        }
+
+        .btn-secondary {
+            background: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .btn-success {
+            background: var(--success-color);
+        }
+
+        .btn-warning {
+            background: var(--warning-color);
+        }
+
+        .btn-error {
+            background: var(--error-color);
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(45, 90, 39, 0.2);
+        }
+
+        .form-error {
+            color: var(--error-color);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        /* Grid */
+        .grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--card-background);
+            border-radius: 8px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--success-color);
+            color: white;
+            padding: 1rem;
+            border-radius: 4px;
+            z-index: 1001;
+            transform: translateX(100%);
+            transition: transform 0.3s;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.error {
+            background: var(--error-color);
+        }
+
+        /* Map */
+        .map-container {
+            height: 400px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background: var(--accent-color);
+            color: white;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge.success {
+            background: var(--success-color);
+        }
+
+        .badge.warning {
+            background: var(--warning-color);
+        }
+
+        .badge.error {
+            background: var(--error-color);
+        }
+
+        /* Table */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card-background);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table th,
+        .table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .table th {
+            background: var(--background-color);
+            font-weight: 600;
+        }
+
+        /* Tabs */
+        .tabs {
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1rem;
+        }
+
+        .tab-nav {
+            display: flex;
+            gap: 0;
+        }
+
+        .tab-nav button {
+            padding: 1rem;
+            border: none;
+            background: none;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab-nav button.active {
+            border-bottom-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Progress Bar */
+        .progress {
+            background: var(--border-color);
+            border-radius: 10px;
+            height: 20px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-bar {
+            background: var(--success-color);
+            height: 100%;
+            transition: width 0.3s;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .nav {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .main-content {
+                padding: 1rem;
+            }
+
+            .grid-2,
+            .grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-success {
+            color: var(--success-color);
+        }
+
+        .text-error {
+            color: var(--error-color);
+        }
+
+        .mb-1 {
+            margin-bottom: 1rem;
+        }
+
+        .mb-2 {
+            margin-bottom: 2rem;
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <noscript>
+        <div style="padding: 2rem; text-align: center;">
+            <h1>JavaScript Required</h1>
+            <p>This application requires JavaScript to function properly. Please enable JavaScript in your browser.</p>
+        </div>
+    </noscript>
+
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <span>🌱</span>
+                <span>GreenTrack</span>
+            </div>
+            <nav class="nav" id="nav">
+                <!-- Navigation will be populated by JavaScript -->
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content" id="main-content">
+        <div id="app">
+            <!-- App content will be populated by JavaScript -->
+        </div>
+    </main>
+
+    <!-- Toast container -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Modal container -->
+    <div id="modal" class="modal">
+        <div class="modal-content" id="modal-content">
+            <!-- Modal content will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        // Database abstraction layer
+        class Database {
+            constructor() {
+                this.init();
+            }
+
+            init() {
+                if (!localStorage.getItem('greentrack_initialized')) {
+                    this.seedData();
+                    localStorage.setItem('greentrack_initialized', 'true');
+                }
+            }
+
+            seedData() {
+                // Seed users
+                const users = [
+                    {
+                        id: 'admin-1',
+                        role: 'admin',
+                        name: 'Admin User',
+                        email: 'admin@demo',
+                        password: '1234',
+                        points: 0,
+                        trained: false
+                    },
+                    {
+                        id: 'worker-1',
+                        role: 'worker',
+                        name: 'Worker User',
+                        email: 'worker@demo',
+                        password: '1234',
+                        points: 0,
+                        trained: false
+                    },
+                    {
+                        id: 'citizen-1',
+                        role: 'citizen',
+                        name: 'Citizen User',
+                        email: 'citizen@demo',
+                        password: '1234',
+                        points: 50,
+                        trained: true
+                    }
+                ];
+                localStorage.setItem('users', JSON.stringify(users));
+
+                // Seed facilities
+                const facilities = [
+                    {
+                        id: 'facility-1',
+                        name: 'Green Recycling Center',
+                        type: 'recycling',
+                        lat: 26.8467,
+                        lng: 80.9462,
+                        address: '123 Hazratganj, Lucknow',
+                        hours: '9 AM - 6 PM'
+                    },
+                    {
+                        id: 'facility-2',
+                        name: 'Organic Compost Hub',
+                        type: 'compost',
+                        lat: 26.8500,
+                        lng: 80.9500,
+                        address: '456 Aminabad, Lucknow',
+                        hours: '8 AM - 5 PM'
+                    },
+                    {
+                        id: 'facility-3',
+                        name: 'Metal Scrap Shop',
+                        type: 'scrap',
+                        lat: 26.8400,
+                        lng: 80.9400,
+                        address: '789 Chowk, Lucknow',
+                        hours: '10 AM - 7 PM'
+                    }
+                ];
+                localStorage.setItem('facilities', JSON.stringify(facilities));
+
+                // Initialize other data stores
+                localStorage.setItem('reports', JSON.stringify([]));
+                localStorage.setItem('trainingProgress', JSON.stringify([]));
+            }
+
+            getAll(collection) {
+                const data = localStorage.getItem(collection);
+                return data ? JSON.parse(data) : [];
+            }
+
+            add(collection, item) {
+                const items = this.getAll(collection);
+                item.id = item.id || this.generateId();
+                items.push(item);
+                localStorage.setItem(collection, JSON.stringify(items));
+                return item;
+            }
+
+            updateById(collection, id, updates) {
+                const items = this.getAll(collection);
+                const index = items.findIndex(item => item.id === id);
+                if (index !== -1) {
+                    items[index] = { ...items[index], ...updates };
+                    localStorage.setItem(collection, JSON.stringify(items));
+                    return items[index];
+                }
+                return null;
+            }
+
+            remove(collection, id) {
+                const items = this.getAll(collection);
+                const filtered = items.filter(item => item.id !== id);
+                localStorage.setItem(collection, JSON.stringify(filtered));
+                return true;
+            }
+
+            findById(collection, id) {
+                const items = this.getAll(collection);
+                return items.find(item => item.id === id);
+            }
+
+            findBy(collection, predicate) {
+                const items = this.getAll(collection);
+                return items.filter(predicate);
+            }
+
+            generateId() {
+                return Date.now().toString(36) + Math.random().toString(36).substr(2);
+            }
+
+            exportData() {
+                const data = {};
+                ['users', 'reports', 'facilities', 'trainingProgress'].forEach(collection => {
+                    data[collection] = this.getAll(collection);
+                });
+                return JSON.stringify(data, null, 2);
+            }
+
+            importData(jsonData) {
+                try {
+                    const data = JSON.parse(jsonData);
+                    Object.keys(data).forEach(collection => {
+                        localStorage.setItem(collection, JSON.stringify(data[collection]));
+                    });
+                    return true;
+                } catch (error) {
+                    console.error('Import error:', error);
+                    return false;
+                }
+            }
+        }
+
+        // Initialize database
+        const db = new Database();
+
+        // Authentication system
+        class Auth {
+            constructor() {
+                this.currentUser = null;
+                this.loadSession();
+            }
+
+            login(email, password) {
+                const users = db.getAll('users');
+                const user = users.find(u => u.email === email && u.password === password);
+                
+                if (user) {
+                    this.currentUser = user;
+                    localStorage.setItem('currentSession', JSON.stringify(user));
+                    return { success: true, user };
+                }
+                
+                return { success: false, error: 'Invalid credentials' };
+            }
+
+            logout() {
+                this.currentUser = null;
+                localStorage.removeItem('currentSession');
+                router.navigate('/login');
+            }
+
+            loadSession() {
+                const session = localStorage.getItem('currentSession');
+                if (session) {
+                    this.currentUser = JSON.parse(session);
+                }
+            }
+
+            isAuthenticated() {
+                return this.currentUser !== null;
+            }
+
+            hasRole(role) {
+                return this.currentUser && this.currentUser.role === role;
+            }
+
+            requireAuth() {
+                if (!this.isAuthenticated()) {
+                    router.navigate('/login');
+                    return false;
+                }
+                return true;
+            }
+
+            requireRole(role) {
+                if (!this.requireAuth() || !this.hasRole(role)) {
+                    showToast('Access denied', 'error');
+                    router.navigate('/login');
+                    return false;
+                }
+                return true;
+            }
+        }
+
+        // Initialize auth
+        const auth = new Auth();
+
+        // Utility functions
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function showModal(title, content, buttons = []) {
+            const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modal-content');
+            
+            modalContent.innerHTML = `
+                <h2>${title}</h2>
+                <div style="margin: 1rem 0;">${content}</div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    ${buttons.map(btn => `
+                        <button class="btn ${btn.class || ''}" onclick="${btn.onclick}">${btn.text}</button>
+                    `).join('')}
+                    <button class="btn btn-secondary" onclick="hideModal()">Close</button>
+                </div>
+            `;
+            
+            modal.classList.add('show');
+        }
+
+        function hideModal() {
+            document.getElementById('modal').classList.remove('show');
+        }
+
+        function formatDate(date) {
+            return new Date(date).toLocaleDateString();
+        }
+
+        function formatDateTime(date) {
+            return new Date(date).toLocaleString();
+        }
+
+        // Router
+        class Router {
+            constructor() {
+                this.routes = {};
+                this.currentRoute = null;
+                this.init();
+            }
+
+            init() {
+                window.addEventListener('hashchange', () => this.handleRoute());
+                window.addEventListener('load', () => this.handleRoute());
+            }
+
+            register(path, handler) {
+                this.routes[path] = handler;
+            }
+
+            navigate(path) {
+                window.location.hash = path;
+            }
+
+            handleRoute() {
+                const hash = window.location.hash.slice(1) || '/login';
+                this.currentRoute = hash;
+                
+                if (this.routes[hash]) {
+                    this.routes[hash]();
+                } else {
+                    this.navigate('/login');
+                }
+                
+                this.updateNav();
+            }
+
+            updateNav() {
+                const nav = document.getElementById('nav');
+                const isAuth = auth.isAuthenticated();
+                
+                if (!isAuth) {
+                    nav.innerHTML = '<a href="#/login">Login</a>';
+                    return;
+                }
+
+                const role = auth.currentUser.role;
+                let links = [];
+
+                if (role === 'citizen') {
+                    links = [
+                        { href: '#/training', text: 'Training', icon: '📚' },
+                        { href: '#/report', text: 'Report Waste', icon: '📋' },
+                        { href: '#/map', text: 'Map', icon: '🗺️' },
+                        { href: '#/facilities', text: 'Facilities', icon: '🏢' },
+                        { href: '#/leaderboard', text: 'Leaderboard', icon: '🏆' }
+                    ];
+                } else if (role === 'worker') {
+                    links = [
+                        { href: '#/map', text: 'Map', icon: '🗺️' },
+                        { href: '#/reports', text: 'Reports', icon: '📋' }
+                    ];
+                } else if (role === 'admin') {
+                    links = [
+                        { href: '#/dashboard', text: 'Dashboard', icon: '📊' },
+                        { href: '#/map', text: 'Map', icon: '🗺️' },
+                        { href: '#/facilities', text: 'Facilities', icon: '🏢' },
+                        { href: '#/leaderboard', text: 'Leaderboard', icon: '🏆' }
+                    ];
+                }
+
+                links.push({ href: '#/profile', text: auth.currentUser.name, icon: '👤' });
+
+                nav.innerHTML = links.map(link => `
+                    <a href="${link.href}" class="${this.currentRoute === link.href.slice(1) ? 'active' : ''}">
+                        ${link.icon} ${link.text}
+                    </a>
+                `).join('') + '<button class="btn" onclick="auth.logout()" style="margin-left: 1rem;">Logout</button>';
+            }
+        }
+
+        // Initialize router
+        const router = new Router();
+
+        // Training system
+        class Training {
+            constructor() {
+                this.modules = [
+                    {
+                        id: 'module-1',
+                        title: 'Waste Segregation',
+                        content: `
+                            <h3>Learn to Segregate Waste Properly</h3>
+                            <p>Proper waste segregation is the first step towards effective waste management.</p>
+                            <h4>Categories:</h4>
+                            <ul>
+                                <li><strong>Wet Waste:</strong> Food scraps, vegetable peels, garden waste</li>
+                                <li><strong>Dry Waste:</strong> Paper, plastic, metal, glass</li>
+                                <li><strong>Hazardous Waste:</strong> Batteries, medicines, chemicals</li>
+                            </ul>
+                            <p>Always use separate bins for different types of waste to make recycling more effective.</p>
+                        `
+                    },
+                    {
+                        id: 'module-2',
+                        title: 'Home Composting',
+                        content: `
+                            <h3>Create Compost at Home</h3>
+                            <p>Turn your kitchen waste into nutrient-rich compost for plants.</p>
+                            <h4>Steps:</h4>
+                            <ol>
+                                <li>Collect organic waste (vegetable peels, fruit scraps)</li>
+                                <li>Layer with dry leaves or paper</li>
+                                <li>Add water to maintain moisture</li>
+                                <li>Turn the mixture regularly</li>
+                                <li>Harvest compost in 2-3 months</li>
+                            </ol>
+                            <p>Composting reduces waste and creates valuable fertilizer!</p>
+                        `
+                    },
+                    {
+                        id: 'module-3',
+                        title: 'Safe Disposal Methods',
+                        content: `
+                            <h3>Safe Waste Disposal Practices</h3>
+                            <p>Some waste requires special handling to prevent environmental damage.</p>
+                            <h4>Special Disposal:</h4>
+                            <ul>
+                                <li><strong>E-waste:</strong> Take to certified e-waste centers</li>
+                                <li><strong>Batteries:</strong> Return to authorized dealers</li>
+                                <li><strong>Medicines:</strong> Return to pharmacies or hospitals</li>
+                                <li><strong>Paint/Chemicals:</strong> Contact hazardous waste facilities</li>
+                            </ul>
+                            <p>Never throw hazardous waste in regular bins - it can contaminate the environment!</p>
+                        `
+                    }
+                ];
+
+                this.quiz = {
+                    questions: [
+                        {
+                            question: "Which bin should you use for vegetable peels?",
+                            options: ["Dry waste bin", "Wet waste bin", "Hazardous waste bin"],
+                            correct: 1
+                        },
+                        {
+                            question: "How long does it typically take to make compost at home?",
+                            options: ["1 week", "2-3 months", "1 year"],
+                            correct: 1
+                        },
+                        {
+                            question: "Where should you dispose of old batteries?",
+                            options: ["Regular dustbin", "Wet waste bin", "Authorized dealers"],
+                            correct: 2
+                        },
+                        {
+                            question: "What should you do with expired medicines?",
+                            options: ["Throw in dustbin", "Return to pharmacy", "Bury in garden"],
+                            correct: 1
+                        },
+                        {
+                            question: "Why is waste segregation important?",
+                            options: ["Makes recycling easier", "Looks organized", "Reduces smell"],
+                            correct: 0
+                        }
+                    ]
+                };
+            }
+
+            getProgress(userId) {
+                const progress = db.getAll('trainingProgress');
+                return progress.find(p => p.userId === userId) || {
+                    userId,
+                    modulesCompleted: [],
+                    quizScore: null,
+                    certified: false
+                };
+            }
+
+            completeModule(userId, moduleId) {
+                let progress = this.getProgress(userId);
+                
+                if (!progress.modulesCompleted.includes(moduleId)) {
+                    progress.modulesCompleted.push(moduleId);
+                    
+                    // Update in database
+                    const existing = db.findBy('trainingProgress', p => p.userId === userId);
+                    if (existing.length > 0) {
+                        db.updateById('trainingProgress', existing[0].id, progress);
+                    } else {
+                        db.add('trainingProgress', progress);
+                    }
+                    
+                    // Award points
+                    this.awardPoints(userId, 5);
+                    showToast('Module completed! +5 points');
+                }
+            }
+
+            submitQuiz(userId, answers) {
+                let score = 0;
+                answers.forEach((answer, index) => {
+                    if (answer === this.quiz.questions[index].correct) {
+                        score++;
+                    }
+                });
+
+                const percentage = (score / this.quiz.questions.length) * 100;
+                let progress = this.getProgress(userId);
+                progress.quizScore = percentage;
+                
+                if (percentage >= 60 && progress.modulesCompleted.length === this.modules.length) {
+                    progress.certified = true;
+                    this.awardPoints(userId, 20);
+                    db.updateById('users', userId, { trained: true });
+                    showToast('Congratulations! You are now Green Certified! +20 points', 'success');
+                }
+
+                // Update progress
+                const existing = db.findBy('trainingProgress', p => p.userId === userId);
+                if (existing.length > 0) {
+                    db.updateById('trainingProgress', existing[0].id, progress);
+                } else {
+                    db.add('trainingProgress', progress);
+                }
+
+                return { score, percentage, certified: progress.certified };
+            }
+
+            awardPoints(userId, points) {
+                const user = db.findById('users', userId);
+                if (user) {
+                    db.updateById('users', userId, { points: (user.points || 0) + points });
+                }
+            }
+
+            renderTraining() {
+                if (!auth.requireRole('citizen')) return;
+
+                const progress = this.getProgress(auth.currentUser.id);
+                const completedCount = progress.modulesCompleted.length;
+                const totalModules = this.modules.length;
+                const progressPercentage = (completedCount / totalModules) * 100;
+
+                return `
+                    <div class="card">
+                        <div class="card-header">
+                            <h1>🌱 Green Training Program</h1>
+                            ${progress.certified ? '<span class="badge success">Green Certified</span>' : ''}
+                        </div>
+                        
+                        <div class="progress">
+                            <div class="progress-bar" style="width: ${progressPercentage}%"></div>
+                        </div>
+                        <p>Progress: ${completedCount}/${totalModules} modules completed</p>
+
+                        <div class="grid grid-3">
+                            ${this.modules.map(module => `
+                                <div class="card">
+                                    <h3>${module.title}</h3>
+                                    ${progress.modulesCompleted.includes(module.id) ? 
+                                        '<span class="badge success">Completed</span>' : 
+                                        `<button class="btn" onclick="training.viewModule('${module.id}')">Start Module</button>`
+                                    }
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        ${completedCount === totalModules && !progress.certified ? `
+                            <div class="card" style="border: 2px solid var(--warning-color);">
+                                <h3>📝 Take the Quiz</h3>
+                                <p>Complete all modules! Now take the quiz to get certified.</p>
+                                <button class="btn btn-warning" onclick="training.startQuiz()">Start Quiz</button>
+                            </div>
+                        ` : ''}
+
+                        ${progress.certified ? `
+                            <div class="card" style="border: 2px solid var(--success-color);">
+                                <h3>🏆 Congratulations!</h3>
+                                <p>You are now <strong>Green Certified</strong>!</p>
+                                <p>Quiz Score: ${progress.quizScore}%</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
+            viewModule(moduleId) {
+                const module = this.modules.find(m => m.id === moduleId);
+                if (!module) return;
+
+                showModal(module.title, `
+                    ${module.content}
+                    <div style="margin-top: 2rem;">
+                        <button class="btn btn-success" onclick="training.completeModule('${auth.currentUser.id}', '${moduleId}'); hideModal(); router.handleRoute();">
+                            Complete Module
+                        </button>
+                    </div>
+                `);
+            }
+
+            startQuiz() {
+                let currentQuestion = 0;
+                const answers = [];
+
+                const showQuestion = () => {
+                    if (currentQuestion >= this.quiz.questions.length) {
+                        // Submit quiz
+                        const result = this.submitQuiz(auth.currentUser.id, answers);
+                        showModal('Quiz Results', `
+                            <h3>Quiz Completed!</h3>
+                            <p>Your Score: ${result.score}/${this.quiz.questions.length} (${result.percentage.toFixed(1)}%)</p>
+                            ${result.certified ? 
+                                '<p class="text-success">🎉 Congratulations! You are now Green Certified!</p>' : 
+                                '<p class="text-error">You need 60% or higher to get certified. Try again!</p>'
+                            }
+                        `, [{
+                            text: 'Continue',
+                            onclick: 'hideModal(); router.handleRoute();'
+                        }]);
+                        return;
+                    }
+
+                    const question = this.quiz.questions[currentQuestion];
+                    showModal(`Question ${currentQuestion + 1}/${this.quiz.questions.length}`, `
+                        <h3>${question.question}</h3>
+                        <div style="margin: 1rem 0;">
+                            ${question.options.map((option, index) => `
+                                <label style="display: block; margin: 0.5rem 0;">
+                                    <input type="radio" name="answer" value="${index}" style="margin-right: 0.5rem;">
+                                    ${option}
+                                </label>
+                            `).join('')}
+                        </div>
+                    `, [{
+                        text: 'Next',
+                        class: 'btn-success',
+                        onclick: `
+                            const selected = document.querySelector('input[name="answer"]:checked');
+                            if (!selected) {
+                                alert('Please select an answer');
+                                return;
+                            }
+                            training.quiz.answers[${currentQuestion}] = parseInt(selected.value);
+                            training.quiz.currentQuestion = ${currentQuestion + 1};
+                            hideModal();
+                            setTimeout(() => training.startQuiz(), 100);
+                        `
+                    }]);
+                };
+
+                // Store quiz state
+                this.quiz.currentQuestion = currentQuestion;
+                this.quiz.answers = answers;
+                showQuestion();
+            }
+        }
+
+        // Report system
+        class ReportSystem {
+            constructor() {
+                this.categories = ['litter', 'overflow', 'burning', 'hazardous'];
+            }
+
+            renderReportForm() {
+                if (!auth.requireRole('citizen')) return;
+
+                return `
+                    <div class="card">
+                        <h1>📋 Report Waste Issue</h1>
+                        <form id="report-form" onsubmit="reportSystem.submitReport(event)">
+                            <div class="form-group">
+                                <label class="form-label">Category *</label>
+                                <select class="form-control" name="category" required>
+                                    <option value="">Select category</option>
+                                    <option value="litter">Litter</option>
+                                    <option value="overflow">Bin Overflow</option>
+                                    <option value="burning">Illegal Burning</option>
+                                    <option value="hazardous">Hazardous Waste</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Photo *</label>
+                                <input type="file" class="form-control" name="photo" accept="image/*" required>
+                                <div id="photo-preview" style="margin-top: 1rem;"></div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-control" name="note" rows="4" placeholder="Describe the issue..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="checkbox" name="buildingNonSegregating">
+                                    Building not following segregation rules
+                                </label>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Location</label>
+                                <button type="button" class="btn btn-secondary" onclick="reportSystem.getCurrentLocation()">
+                                    📍 Get Current Location
+                                </button>
+                                <div id="location-info" style="margin-top: 0.5rem; color: var(--text-secondary);"></div>
+                                <input type="hidden" name="lat">
+                                <input type="hidden" name="lng">
+                            </div>
+
+                            <button type="submit" class="btn btn-success">Submit Report</button>
+                        </form>
+                    </div>
+                `;
+            }
+
+            getCurrentLocation() {
+                const locationInfo = document.getElementById('location-info');
+                const latInput = document.querySelector('input[name="lat"]');
+                const lngInput = document.querySelector('input[name="lng"]');
+
+                locationInfo.textContent = 'Getting location...';
+
+                if (!navigator.geolocation) {
+                    locationInfo.textContent = 'Geolocation not supported';
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        
+                        latInput.value = lat;
+                        lngInput.value = lng;
+                        locationInfo.textContent = `Location: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                    },
+                    error => {
+                        locationInfo.textContent = 'Location access denied or unavailable';
+                        // Default to Lucknow coordinates
+                        latInput.value = 26.8467;
+                        lngInput.value = 80.9462;
+                        locationInfo.textContent = 'Using default location (Lucknow)';
+                    }
+                );
+            }
+
+            submitReport(event) {
+                event.preventDefault();
+                const form = event.target;
+                const formData = new FormData(form);
+
+                // Validate location
+                if (!formData.get('lat') || !formData.get('lng')) {
+                    showToast('Please get your location first', 'error');
+                    return;
+                }
+
+                // Handle photo
+                const photoFile = formData.get('photo');
+                if (!photoFile) {
+                    showToast('Please select a photo', 'error');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const report = {
+                        photoBase64: e.target.result,
+                        lat: parseFloat(formData.get('lat')),
+                        lng: parseFloat(formData.get('lng')),
+                        note: formData.get('note'),
+                        category: formData.get('category'),
+                        buildingNonSegregating: formData.get('buildingNonSegregating') === 'on',
+                        createdAt: new Date().toISOString(),
+                        createdByUserId: auth.currentUser.id,
+                        status: 'new'
+                    };
+
+                    db.add('reports', report);
+                    
+                    // Award points
+                    const user = db.findById('users', auth.currentUser.id);
+                    db.updateById('users', auth.currentUser.id, { 
+                        points: (user.points || 0) + 5 
+                    });
+
+                    showToast('Report submitted successfully! +5 points', 'success');
+                    router.navigate('/map');
+                };
+
+                reader.readAsDataURL(photoFile);
+            }
+        }
+
+        // Map system
+        class MapSystem {
+            constructor() {
+                this.map = null;
+                this.reportLayer = null;
+                this.facilityLayer = null;
+                this.truckMarker = null;
+                this.truckPath = [
+                    [26.8467, 80.9462],
+                    [26.8500, 80.9500],
+                    [26.8400, 80.9400],
+                    [26.8467, 80.9462]
+                ];
+                this.truckPosition = 0;
+                this.truckInterval = null;
+            }
+
+            renderMap() {
+                return `
+                    <div class="card">
+                        <div class="card-header">
+                            <h1>🗺️ Waste Management Map</h1>
+                            <div>
+                                <button class="btn btn-secondary" onclick="mapSystem.toggleTruck()">
+                                    <span id="truck-btn-text">Start Truck</span>
+                                </button>
+                                <button class="btn btn-secondary" onclick="mapSystem.refreshMap()">Refresh</button>
+                            </div>
+                        </div>
+                        
+                        <div class="tabs">
+                            <div class="tab-nav">
+                                <button class="tab-btn active" data-tab="reports">Reports</button>
+                                <button class="tab-btn" data-tab="facilities">Facilities</button>
+                            </div>
+                        </div>
+                        
+                        <div id="map" class="map-container"></div>
+                        
+                        <div class="grid grid-2" style="margin-top: 1rem;">
+                            <div class="card">
+                                <h3>Legend</h3>
+                                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                    <span>🔴 New Reports</span>
+                                    <span>🟡 Assigned Reports</span>
+                                    <span>🟢 Resolved Reports</span>
+                                    <span>🚛 Waste Collection Truck</span>
+                                    <span>♻️ Recycling Centers</span>
+                                    <span>🌿 Compost Facilities</span>
+                                    <span>🔧 Scrap Shops</span>
+                                </div>
+                            </div>
+                            
+                            <div class="card">
+                                <h3>Statistics</h3>
+                                <div id="map-stats">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            initMap() {
+                if (this.map) {
+                    this.map.remove();
+                }
+
+                this.map = L.map('map').setView([26.8467, 80.9462], 13);
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(this.map);
+
+                this.reportLayer = L.layerGroup().addTo(this.map);
+                this.facilityLayer = L.layerGroup().addTo(this.map);
+
+                this.loadReports();
+                this.loadFacilities();
+                this.updateStats();
+                this.initTabs();
+            }
+
+            initTabs() {
+                const tabBtns = document.querySelectorAll('.tab-btn');
+                tabBtns.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        tabBtns.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        
+                        const tab = btn.dataset.tab;
+                        if (tab === 'reports') {
+                            this.showReports();
+                        } else if (tab === 'facilities') {
+                            this.showFacilities();
+                        }
+                    });
+                });
+            }
+
+            showReports() {
+                this.facilityLayer.clearLayers();
+                this.loadReports();
+            }
+
+            showFacilities() {
+                this.reportLayer.clearLayers();
+                this.loadFacilities();
+            }
+
+            loadReports() {
+                this.reportLayer.clearLayers();
+                const reports = db.getAll('reports');
+                
+                reports.forEach(report => {
+                    let color = 'red';
+                    if (report.status === 'assigned') color = 'orange';
+                    if (report.status === 'resolved') color = 'green';
+
+                    const marker = L.circleMarker([report.lat, report.lng], {
+                        color: color,
+                        radius: 8
+                    }).addTo(this.reportLayer);
+
+                    const user = db.findById('users', report.createdByUserId);
+                    marker.bindPopup(`
+                        <strong>${report.category.toUpperCase()}</strong><br>
+                        Reporter: ${user ? user.name : 'Unknown'}<br>
+                        Date: ${formatDate(report.createdAt)}<br>
+                        Status: ${report.status}<br>
+                        ${report.note ? `Note: ${report.note}<br>` : ''}
+                        ${report.buildingNonSegregating ? '⚠️ Non-segregating building<br>' : ''}
+                        <img src="${report.photoBase64}" style="width:200px;height:auto;margin-top:5px;">
+                    `);
+                });
+            }
+
+            loadFacilities() {
+                this.facilityLayer.clearLayers();
+                const facilities = db.getAll('facilities');
+                
+                facilities.forEach(facility => {
+                    let icon = '♻️';
+                    if (facility.type === 'compost') icon = '🌿';
+                    if (facility.type === 'scrap') icon = '🔧';
+
+                    const marker = L.marker([facility.lat, facility.lng], {
+                        icon: L.divIcon({
+                            html: icon,
+                            className: 'facility-icon',
+                            iconSize: [25, 25]
+                        })
+                    }).addTo(this.facilityLayer);
+
+                    marker.bindPopup(`
+                        <strong>${facility.name}</strong><br>
+                        Type: ${facility.type}<br>
+                        Address: ${facility.address}<br>
+                        Hours: ${facility.hours}
+                    `);
+                });
+            }
+
+            toggleTruck() {
+                const btnText = document.getElementById('truck-btn-text');
+                
+                if (this.truckInterval) {
+                    clearInterval(this.truckInterval);
+                    this.truckInterval = null;
+                    btnText.textContent = 'Start Truck';
+                    if (this.truckMarker) {
+                        this.map.removeLayer(this.truckMarker);
+                    }
+                } else {
+                    btnText.textContent = 'Stop Truck';
+                    this.startTruckSimulation();
+                }
+            }
+
+            startTruckSimulation() {
+                this.truckPosition = 0;
+                
+                this.truckInterval = setInterval(() => {
+                    if (this.truckMarker) {
+                        this.map.removeLayer(this.truckMarker);
+                    }
+
+                    const position = this.truckPath[this.truckPosition];
+                    this.truckMarker = L.marker(position, {
+                        icon: L.divIcon({
+                            html: '🚛',
+                            className: 'truck-icon',
+                            iconSize: [30, 30]
+                        })
+                    }).addTo(this.map);
+
+                    this.truckMarker.bindPopup('Waste Collection Truck');
+                    
+                    this.truckPosition = (this.truckPosition + 1) % this.truckPath.length;
+                }, 2000);
+            }
+
+            updateStats() {
+                const reports = db.getAll('reports');
+                const statsEl = document.getElementById('map-stats');
+                
+                if (!statsEl) return;
+
+                const stats = {
+                    total: reports.length,
+                    new: reports.filter(r => r.status === 'new').length,
+                    assigned: reports.filter(r => r.status === 'assigned').length,
+                    resolved: reports.filter(r => r.status === 'resolved').length
+                };
+
+                statsEl.innerHTML = `
+                    <p>Total Reports: ${stats.total}</p>
+                    <p>New: ${stats.new}</p>
+                    <p>Assigned: ${stats.assigned}</p>
+                    <p>Resolved: ${stats.resolved}</p>
+                `;
+            }
+
+            refreshMap() {
+                this.loadReports();
+                this.loadFacilities();
+                this.updateStats();
+                showToast('Map refreshed');
+            }
+        }
+
+        // Initialize systems
+        const training = new Training();
+        const reportSystem = new ReportSystem();
+        const mapSystem = new MapSystem();
+
+        // Dashboard system
+        class Dashboard {
+            constructor() {
+                this.charts = {};
+            }
+
+            renderDashboard() {
+                if (!auth.requireRole('admin')) return;
+
+                const reports = db.getAll('reports');
+                const users = db.getAll('users');
+                const trainedUsers = users.filter(u => u.trained).length;
+                const nonSegregatingReports = reports.filter(r => r.buildingNonSegregating).length;
+
+                return `
+                    <div class="card">
+                        <h1>📊 Admin Dashboard</h1>
+                        
+                        <div class="grid grid-3 mb-2">
+                            <div class="card" style="text-align: center; background: var(--success-color); color: white;">
+                                <h2>${reports.length}</h2>
+                                <p>Total Reports</p>
+                            </div>
+                            <div class="card" style="text-align: center; background: var(--primary-color); color: white;">
+                                <h2>${trainedUsers}</h2>
+                                <p>Trained Citizens</p>
+                            </div>
+                            <div class="card" style="text-align: center; background: var(--warning-color); color: white;">
+                                <h2>${nonSegregatingReports}</h2>
+                                <p>Non-Segregating Buildings</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-2">
+                            <div class="card">
+                                <h3>Reports by Category</h3>
+                                <canvas id="categoryChart" width="400" height="200"></canvas>
+                            </div>
+                            <div class="card">
+                                <h3>Weekly Report Trend</h3>
+                                <canvas id="trendChart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h3>Recent Reports</h3>
+                            <div class="table-container" style="overflow-x: auto;">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Category</th>
+                                            <th>Reporter</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${reports.slice(-10).reverse().map(report => {
+                                            const user = db.findById('users', report.createdByUserId);
+                                            return `
+                                                <tr>
+                                                    <td>${formatDate(report.createdAt)}</td>
+                                                    <td><span class="badge">${report.category}</span></td>
+                                                    <td>${user ? user.name : 'Unknown'}</td>
+                                                    <td><span class="badge ${report.status === 'resolved' ? 'success' : report.status === 'assigned' ? 'warning' : ''}">${report.status}</span></td>
+                                                    <td>
+                                                        <button class="btn btn-secondary" onclick="dashboard.viewReport('${report.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">View</button>
+                                                    </td>
+                                                </tr>
+                                            `;
+                                        }).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h3>Data Export/Import</h3>
+                            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                                <button class="btn btn-secondary" onclick="dashboard.exportData()">Export Data</button>
+                                <input type="file" id="import-file" accept=".json" style="display: none;" onchange="dashboard.importData(event)">
+                                <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">Import Data</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            initCharts() {
+                setTimeout(() => {
+                    this.createCategoryChart();
+                    this.createTrendChart();
+                }, 100);
+            }
+
+            createCategoryChart() {
+                const ctx = document.getElementById('categoryChart');
+                if (!ctx) return;
+
+                const reports = db.getAll('reports');
+                const categories = ['litter', 'overflow', 'burning', 'hazardous'];
+                const data = categories.map(cat => 
+                    reports.filter(r => r.category === cat).length
+                );
+
+                if (this.charts.category) {
+                    this.charts.category.destroy();
+                }
+
+                this.charts.category = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Litter', 'Overflow', 'Burning', 'Hazardous'],
+                        datasets: [{
+                            data: data,
+                            backgroundColor: [
+                                '#ff6384',
+                                '#36a2eb', 
+                                '#ffce56',
+                                '#4bc0c0'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+
+            createTrendChart() {
+                const ctx = document.getElementById('trendChart');
+                if (!ctx) return;
+
+                const reports = db.getAll('reports');
+                const last7Days = [];
+                const today = new Date();
+                
+                for (let i = 6; i >= 0; i--) {
+                    const date = new Date(today);
+                    date.setDate(date.getDate() - i);
+                    const dateStr = date.toISOString().split('T')[0];
+                    const count = reports.filter(r => 
+                        r.createdAt.split('T')[0] === dateStr
+                    ).length;
+                    last7Days.push({
+                        date: date.toLocaleDateString('en-US', { weekday: 'short' }),
+                        count: count
+                    });
+                }
+
+                if (this.charts.trend) {
+                    this.charts.trend.destroy();
+                }
+
+                this.charts.trend = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: last7Days.map(d => d.date),
+                        datasets: [{
+                            label: 'Reports',
+                            data: last7Days.map(d => d.count),
+                            backgroundColor: '#4caf50'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            viewReport(reportId) {
+                const report = db.findById('reports', reportId);
+                if (!report) return;
+
+                const user = db.findById('users', report.createdByUserId);
+                
+                showModal('Report Details', `
+                    <div style="max-height: 400px; overflow-y: auto;">
+                        <p><strong>Category:</strong> ${report.category}</p>
+                        <p><strong>Reporter:</strong> ${user ? user.name : 'Unknown'}</p>
+                        <p><strong>Date:</strong> ${formatDateTime(report.createdAt)}</p>
+                        <p><strong>Status:</strong> ${report.status}</p>
+                        <p><strong>Location:</strong> ${report.lat.toFixed(6)}, ${report.lng.toFixed(6)}</p>
+                        ${report.note ? `<p><strong>Note:</strong> ${report.note}</p>` : ''}
+                        ${report.buildingNonSegregating ? '<p><strong>⚠️ Non-segregating building reported</strong></p>' : ''}
+                        <p><strong>Photo:</strong></p>
+                        <img src="${report.photoBase64}" style="width: 100%; max-width: 300px; height: auto;">
+                        
+                        <div style="margin-top: 1rem;">
+                            <label class="form-label">Update Status:</label>
+                            <select id="status-update" class="form-control" style="margin-bottom: 1rem;">
+                                <option value="new" ${report.status === 'new' ? 'selected' : ''}>New</option>
+                                <option value="assigned" ${report.status === 'assigned' ? 'selected' : ''}>Assigned</option>
+                                <option value="resolved" ${report.status === 'resolved' ? 'selected' : ''}>Resolved</option>
+                            </select>
+                            <button class="btn btn-success" onclick="dashboard.updateReportStatus('${reportId}')">Update Status</button>
+                        </div>
+                    </div>
+                `);
+            }
+
+            updateReportStatus(reportId) {
+                const newStatus = document.getElementById('status-update').value;
+                db.updateById('reports', reportId, { status: newStatus });
+                showToast('Report status updated');
+                hideModal();
+                router.handleRoute(); // Refresh dashboard
+            }
+
+            exportData() {
+                const data = db.exportData();
+                const blob = new Blob([data], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'greentrack-data.json';
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('Data exported successfully');
+            }
+
+            importData(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const success = db.importData(e.target.result);
+                    if (success) {
+                        showToast('Data imported successfully');
+                        router.handleRoute();
+                    } else {
+                        showToast('Import failed - invalid data format', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        // Facilities system
+        class FacilitySystem {
+            renderFacilities() {
+                const facilities = db.getAll('facilities');
+                const searchTerm = new URLSearchParams(window.location.hash.split('?')[1] || '').get('search') || '';
+                
+                const filtered = facilities.filter(f => 
+                    !searchTerm || 
+                    f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    f.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    f.address.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+
+                return `
+                    <div class="card">
+                        <h1>🏢 Waste Management Facilities</h1>
+                        
+                        <div class="form-group">
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                placeholder="Search facilities..." 
+                                value="${searchTerm}"
+                                oninput="facilitySystem.search(this.value)"
+                            >
+                        </div>
+
+                        <div class="grid grid-2">
+                            <div>
+                                <h3>Facilities List</h3>
+                                <div class="grid">
+                                    ${filtered.map(facility => `
+                                        <div class="card">
+                                            <h4>${facility.name}</h4>
+                                            <p><strong>Type:</strong> ${facility.type.charAt(0).toUpperCase() + facility.type.slice(1)}</p>
+                                            <p><strong>Address:</strong> ${facility.address}</p>
+                                            <p><strong>Hours:</strong> ${facility.hours}</p>
+                                            <button class="btn btn-secondary" onclick="facilitySystem.showOnMap('${facility.id}')">
+                                                Show on Map
+                                            </button>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h3>Map View</h3>
+                                <div id="facilities-map" class="map-container"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            initMap() {
+                setTimeout(() => {
+                    if (this.map) {
+                        this.map.remove();
+                    }
+
+                    this.map = L.map('facilities-map').setView([26.8467, 80.9462], 13);
+                    
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors'
+                    }).addTo(this.map);
+
+                    this.loadFacilities();
+                }, 100);
+            }
+
+            loadFacilities() {
+                const facilities = db.getAll('facilities');
+                
+                facilities.forEach(facility => {
+                    let icon = '♻️';
+                    if (facility.type === 'compost') icon = '🌿';
+                    if (facility.type === 'scrap') icon = '🔧';
+
+                    const marker = L.marker([facility.lat, facility.lng], {
+                        icon: L.divIcon({
+                            html: icon,
+                            className: 'facility-icon',
+                            iconSize: [25, 25]
+                        })
+                    }).addTo(this.map);
+
+                    marker.bindPopup(`
+                        <strong>${facility.name}</strong><br>
+                        Type: ${facility.type}<br>
+                        Address: ${facility.address}<br>
+                        Hours: ${facility.hours}
+                    `);
+                });
+            }
+
+            search(term) {
+                const url = window.location.hash.split('?')[0];
+                const newUrl = term ? `${url}?search=${encodeURIComponent(term)}` : url;
+                window.location.hash = newUrl;
+            }
+
+            showOnMap(facilityId) {
+                const facility = db.findById('facilities', facilityId);
+                if (facility && this.map) {
+                    this.map.setView([facility.lat, facility.lng], 16);
+                }
+            }
+        }
+
+        // Incentives system
+        class IncentiveSystem {
+            renderLeaderboard() {
+                const users = db.getAll('users')
+                    .filter(u => u.role === 'citizen')
+                    .sort((a, b) => (b.points || 0) - (a.points || 0))
+                    .slice(0, 10);
+
+                return `
+                    <div class="card">
+                        <h1>🏆 Leaderboard</h1>
+                        <p>Top citizens making a difference in waste management!</p>
+                        
+                        <div class="table-container" style="overflow-x: auto;">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Name</th>
+                                        <th>Points</th>
+                                        <th>Status</th>
+                                        <th>Badges</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${users.map((user, index) => `
+                                        <tr ${auth.currentUser && auth.currentUser.id === user.id ? 'style="background: var(--accent-color); color: white;"' : ''}>
+                                            <td>
+                                                ${index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                                            </td>
+                                            <td>${user.name}</td>
+                                            <td>${user.points || 0}</td>
+                                            <td>
+                                                ${user.trained ? '<span class="badge success">Green Certified</span>' : '<span class="badge">Not Certified</span>'}
+                                            </td>
+                                            <td>
+                                                ${user.trained ? '🌱 Green Expert' : ''}
+                                                ${(user.points || 0) >= 100 ? '⭐ Super Contributor' : ''}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="card" style="margin-top: 2rem;">
+                            <h3>How to Earn Points</h3>
+                            <ul style="margin-left: 2rem;">
+                                <li>Complete training modules: +5 points each</li>
+                                <li>Get Green Certified: +20 points</li>
+                                <li>Submit waste reports: +5 points each</li>
+                                <li>Report non-segregating buildings: +10 points</li>
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Initialize all systems
+        const dashboard = new Dashboard();
+        const facilitySystem = new FacilitySystem();
+        const incentiveSystem = new IncentiveSystem();
+
+        // Profile system
+        function renderProfile() {
+            const user = auth.currentUser;
+            const reports = db.findBy('reports', r => r.createdByUserId === user.id);
+            const progress = training.getProgress(user.id);
+
+            return `
+                <div class="card">
+                    <h1>👤 Profile</h1>
+                    
+                    <div class="grid grid-2">
+                        <div class="card">
+                            <h3>Personal Information</h3>
+                            <p><strong>Name:</strong> ${user.name}</p>
+                            <p><strong>Email:</strong> ${user.email}</p>
+                            <p><strong>Role:</strong> ${user.role.charAt(0).toUpperCase() + user.role.slice(1)}</p>
+                            <p><strong>Points:</strong> ${user.points || 0}</p>
+                            <p><strong>Status:</strong> 
+                                ${user.trained ? '<span class="badge success">Green Certified</span>' : '<span class="badge">Not Certified</span>'}
+                            </p>
+                        </div>
+                        
+                        <div class="card">
+                            <h3>Activity Summary</h3>
+                            ${user.role === 'citizen' ? `
+                                <p><strong>Reports Submitted:</strong> ${reports.length}</p>
+                                <p><strong>Training Progress:</strong> ${progress.modulesCompleted.length}/3 modules</p>
+                                ${progress.quizScore !== null ? `<p><strong>Quiz Score:</strong> ${progress.quizScore.toFixed(1)}%</p>` : ''}
+                            ` : ''}
+                            <p><strong>Member Since:</strong> ${formatDate(new Date())}</p>
+                        </div>
+                    </div>
+
+                    ${user.role === 'citizen' && reports.length > 0 ? `
+                        <div class="card">
+                            <h3>Recent Reports</h3>
+                            <div class="table-container" style="overflow-x: auto;">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Category</th>
+                                            <th>Status</th>
+                                            <th>Points Earned</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${reports.slice(-5).reverse().map(report => `
+                                            <tr>
+                                                <td>${formatDate(report.createdAt)}</td>
+                                                <td><span class="badge">${report.category}</span></td>
+                                                <td><span class="badge ${report.status === 'resolved' ? 'success' : report.status === 'assigned' ? 'warning' : ''}">${report.status}</span></td>
+                                                <td>+5</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        // Login system
+        function renderLogin() {
+            return `
+                <div style="max-width: 400px; margin: 2rem auto;">
+                    <div class="card">
+                        <h1 style="text-align: center; margin-bottom: 2rem;">🌱 GreenTrack Login</h1>
+                        
+                        <form id="login-form" onsubmit="handleLogin(event)">
+                            <div class="form-group">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" name="email" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Password</label>
+                                <input type="password" class="form-control" name="password" required>
+                            </div>
+                            
+                            <button type="submit" class="btn" style="width: 100%;">Login</button>
+                        </form>
+
+                        <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                            <h3>Demo Accounts</h3>
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                <button class="btn btn-secondary" onclick="quickLogin('admin@demo', '1234')">Admin Demo</button>
+                                <button class="btn btn-secondary" onclick="quickLogin('worker@demo', '1234')">Worker Demo</button>
+                                <button class="btn btn-secondary" onclick="quickLogin('citizen@demo', '1234')">Citizen Demo</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            const result = auth.login(formData.get('email'), formData.get('password'));
+            
+            if (result.success) {
+                showToast('Login successful!');
+                const role = result.user.role;
+                if (role === 'citizen') {
+                    router.navigate('/training');
+                } else if (role === 'worker') {
+                    router.navigate('/map');
+                } else if (role === 'admin') {
+                    router.navigate('/dashboard');
+                }
+            } else {
+                showToast(result.error, 'error');
+            }
+        }
+
+        function quickLogin(email, password) {
+            const result = auth.login(email, password);
+            if (result.success) {
+                showToast('Login successful!');
+                const role = result.user.role;
+                if (role === 'citizen') {
+                    router.navigate('/training');
+                } else if (role === 'worker') {
+                    router.navigate('/map');
+                } else if (role === 'admin') {
+                    router.navigate('/dashboard');
+                }
+            }
+        }
+
+        // Register routes
+        router.register('/login', () => {
+            document.getElementById('app').innerHTML = renderLogin();
+        });
+
+        router.register('/training', () => {
+            document.getElementById('app').innerHTML = training.renderTraining();
+        });
+
+        router.register('/report', () => {
+            document.getElementById('app').innerHTML = reportSystem.renderReportForm();
+            // Add photo preview functionality
+            setTimeout(() => {
+                const photoInput = document.querySelector('input[name="photo"]');
+                if (photoInput) {
+                    photoInput.addEventListener('change', function(e) {
+                        const file = e.target.files[0];
+                        const preview = document.getElementById('photo-preview');
+                        if (file && preview) {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                preview.innerHTML = `<img src="${e.target.result}" style="max-width: 200px; height: auto; border-radius: 4px;">`;
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    });
+                }
+            }, 100);
+        });
+
+        router.register('/map', () => {
+            document.getElementById('app').innerHTML = mapSystem.renderMap();
+            setTimeout(() => mapSystem.initMap(), 100);
+        });
+
+        router.register('/dashboard', () => {
+            document.getElementById('app').innerHTML = dashboard.renderDashboard();
+            dashboard.initCharts();
+        });
+
+        router.register('/facilities', () => {
+            document.getElementById('app').innerHTML = facilitySystem.renderFacilities();
+            facilitySystem.initMap();
+        });
+
+        router.register('/leaderboard', () => {
+            document.getElementById('app').innerHTML = incentiveSystem.renderLeaderboard();
+        });
+
+        router.register('/profile', () => {
+            if (!auth.requireAuth()) return;
+            document.getElementById('app').innerHTML = renderProfile();
+        });
+
+        router.register('/reports', () => {
+            if (!auth.requireRole('worker')) return;
+            
+            const reports = db.getAll('reports').sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            
+            document.getElementById('app').innerHTML = `
+                <div class="card">
+                    <h1>📋 Waste Reports</h1>
+                    
+                    <div class="table-container" style="overflow-x: auto;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Category</th>
+                                    <th>Reporter</th>
+                                    <th>Location</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${reports.map(report => {
+                                    const user = db.findById('users', report.createdByUserId);
+                                    return `
+                                        <tr>
+                                            <td>${formatDate(report.createdAt)}</td>
+                                            <td><span class="badge">${report.category}</span></td>
+                                            <td>${user ? user.name : 'Unknown'}</td>
+                                            <td>${report.lat.toFixed(4)}, ${report.lng.toFixed(4)}</td>
+                                            <td><span class="badge ${report.status === 'resolved' ? 'success' : report.status === 'assigned' ? 'warning' : ''}">${report.status}</span></td>
+                                            <td>
+                                                <button class="btn btn-secondary" onclick="viewWorkerReport('${report.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">View</button>
+                                                ${report.status === 'new' ? `<button class="btn btn-warning" onclick="assignReport('${report.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.875rem; margin-left: 0.5rem;">Assign</button>` : ''}
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        });
+
+        function viewWorkerReport(reportId) {
+            const report = db.findById('reports', reportId);
+            if (!report) return;
+
+            const user = db.findById('users', report.createdByUserId);
+            
+            showModal('Report Details', `
+                <div style="max-height: 400px; overflow-y: auto;">
+                    <p><strong>Category:</strong> ${report.category}</p>
+                    <p><strong>Reporter:</strong> ${user ? user.name : 'Unknown'}</p>
+                    <p><strong>Date:</strong> ${formatDateTime(report.createdAt)}</p>
+                    <p><strong>Status:</strong> ${report.status}</p>
+                    <p><strong>Location:</strong> ${report.lat.toFixed(6)}, ${report.lng.toFixed(6)}</p>
+                    ${report.note ? `<p><strong>Note:</strong> ${report.note}</p>` : ''}
+                    ${report.buildingNonSegregating ? '<p><strong>⚠️ Non-segregating building reported</strong></p>' : ''}
+                    <p><strong>Photo:</strong></p>
+                    <img src="${report.photoBase64}" style="width: 100%; max-width: 300px; height: auto;">
+                </div>
+            `);
+        }
+
+        function assignReport(reportId) {
+            db.updateById('reports', reportId, { status: 'assigned' });
+            showToast('Report assigned successfully');
+            router.handleRoute(); // Refresh
+        }
+
+        // Service Worker registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('GreenTrack initialized');
+        });
+    </script>
+
+    <!-- Service Worker Script -->
+    <script id="sw-script" type="application/javascript">
+        const CACHE_NAME = 'greentrack-v1';
+        const urlsToCache = [
+            '/',
+            '/index.html',
+            '/css/styles.css',
+            '/js/app.js',
+            'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',
+            'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
+            'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js'
+        ];
+
+        self.addEventListener('install', event => {
+            event.waitUntil(
+                caches.open(CACHE_NAME)
+                    .then(cache => cache.addAll(urlsToCache))
+            );
+        });
+
+        self.addEventListener('fetch', event => {
+            event.respondWith(
+                caches.match(event.request)
+                    .then(response => {
+                        return response || fetch(event.request);
+                    })
+            );
+        });
+    </script>
+
+    <!-- PWA Manifest as inline JSON -->
+    <script>
+        // Create manifest.json content
+        const manifest = {
+            "name": "GreenTrack - Digital Waste Management",
+            "short_name": "GreenTrack",
+            "description": "Digital waste management and training platform",
+            "start_url": "/",
+            "display": "standalone",
+            "background_color": "#2d5a27",
+            "theme_color": "#2d5a27",
+            "icons": [
+                {
+                    "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiByeD0iMjQiIGZpbGw9IiMyZDVhMjciLz4KPHN2ZyB4PSI0OCIgeT0iNDgiIHdpZHRoPSI5NiIgaGVpZ2h0PSI5NiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSIjZmZmZmZmIj4KPHA+8J+MsTwvcD4KPC9zdmc+Cjwvc3ZnPgo=",
+                    "sizes": "192x192",
+                    "type": "image/svg+xml"
+                },
+                {
+                    "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiByeD0iNjQiIGZpbGw9IiMyZDVhMjciLz4KPHN2ZyB4PSIxMjgiIHk9IjEyOCIgd2lkdGg9IjI1NiIgaGVpZ2h0PSIyNTYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2ZmZmZmZiI+CjxwPvCfjLE8L3A+Cjwvc3ZnPgo8L3N2Zz4K",
+                    "sizes": "512x512",
+                    "type": "image/svg+xml"
+                }
+            ]
+        };
+
+        // Create and inject manifest
+        const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        document.querySelector('link[rel="manifest"]').href = manifestURL;
+
+        // Create and inject service worker
+        const swScript = document.getElementById('sw-script').textContent;
+        const swBlob = new Blob([swScript], {type: 'application/javascript'});
+        const swURL = URL.createObjectURL(swBlob);
+        
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register(swURL)
+                    .then(registration => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
