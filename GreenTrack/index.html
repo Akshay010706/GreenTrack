@@ -46,6 +46,8 @@
     <main class="main-content" id="main-content">
         <div id="app">
             <!-- App content will be populated by JavaScript -->
+            <noscript><p style="color:red;text-align:center;">JavaScript is required to view this application.</p></noscript>
+            <div id="js-fallback" style="display:none;color:red;text-align:center;">If you see this message, JavaScript failed to load. Please check the console for errors.</div>
         </div>
     </main>
 
@@ -59,7 +61,7 @@
         </div>
     </div>
 
-    <script src="js/main.js" type="module"></script>
+    <script src="js/main.js" type="module" onerror="document.getElementById('js-fallback').style.display='block';console.error('Failed to load main.js');"></script>
 
     <!-- Service Worker Script -->
     <script id="sw-script" type="application/javascript">
