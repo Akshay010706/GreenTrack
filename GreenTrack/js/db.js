@@ -1,16 +1,20 @@
 class Database {
     constructor() {
+        console.log('Database constructor');
         this.init();
     }
 
     init() {
+        console.log('Database init');
         if (!localStorage.getItem('greentrack_initialized')) {
-            this.seedData();
+            console.log('Seeding users');
+            this.seedUsers();
             localStorage.setItem('greentrack_initialized', 'true');
         }
     }
 
-    seedData() {
+    seedUsers() {
+        console.log('seedUsers called');
         // Seed users
         const users = [
             {
@@ -42,45 +46,10 @@ class Database {
             }
         ];
         localStorage.setItem('users', JSON.stringify(users));
-
-        // Seed facilities
-        const facilities = [
-            {
-                id: 'facility-1',
-                name: 'Green Recycling Center',
-                type: 'recycling',
-                lat: 26.8467,
-                lng: 80.9462,
-                address: '123 Hazratganj, Lucknow',
-                hours: '9 AM - 6 PM'
-            },
-            {
-                id: 'facility-2',
-                name: 'Organic Compost Hub',
-                type: 'compost',
-                lat: 26.8500,
-                lng: 80.9500,
-                address: '456 Aminabad, Lucknow',
-                hours: '8 AM - 5 PM'
-            },
-            {
-                id: 'facility-3',
-                name: 'Metal Scrap Shop',
-                type: 'scrap',
-                lat: 26.8400,
-                lng: 80.9400,
-                address: '789 Chowk, Lucknow',
-                hours: '10 AM - 7 PM'
-            }
-        ];
-        localStorage.setItem('facilities', JSON.stringify(facilities));
-
-        // Initialize other data stores
-        localStorage.setItem('reports', JSON.stringify([]));
-        localStorage.setItem('trainingProgress', JSON.stringify([]));
     }
 
     getAll(collection) {
+        console.log(`getAll ${collection}`);
         const data = localStorage.getItem(collection);
         return data ? JSON.parse(data) : [];
     }

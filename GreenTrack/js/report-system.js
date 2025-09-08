@@ -1,6 +1,5 @@
-import { db } from './db.js';
+import { supabase } from './supabase-client.js';
 import { auth } from './auth.js';
-import { router } from './router.js';
 import { showToast } from './utils.js';
 
 class ReportSystem {
@@ -38,18 +37,8 @@ class ReportSystem {
                     </div>
 
                     <div class="form-group">
-                        <label style="display: flex; align-items: center; gap: 0.5rem;">
-                            <input type="checkbox" name="buildingNonSegregating">
-                            Building not following segregation rules
-                        </label>
-                    </div>
-
-                    <div class="form-group">
                         <label class="form-label">Location</label>
-                        <button type="button" class="btn btn-secondary" onclick="reportSystem.getCurrentLocation()">
-                            📍 Get Current Location
-                        </button>
-                        <div id="location-info" style="margin-top: 0.5rem; color: var(--text-secondary);"></div>
+                        <p>The location will be automatically determined from the map.</p>
                         <input type="hidden" name="lat">
                         <input type="hidden" name="lng">
                     </div>
@@ -60,82 +49,71 @@ class ReportSystem {
         `;
     }
 
-    getCurrentLocation() {
-        const locationInfo = document.getElementById('location-info');
-        const latInput = document.querySelector('input[name="lat"]');
-        const lngInput = document.querySelector('input[name="lng"]');
-
-        locationInfo.textContent = 'Getting location...';
-
-        if (!navigator.geolocation) {
-            locationInfo.textContent = 'Geolocation not supported';
-            return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-            position => {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-
-                latInput.value = lat;
-                lngInput.value = lng;
-                locationInfo.textContent = `Location: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-            },
-            error => {
-                locationInfo.textContent = 'Location access denied or unavailable';
-                // Default to Lucknow coordinates
-                latInput.value = 26.8467;
-                lngInput.value = 80.9462;
-                locationInfo.textContent = 'Using default location (Lucknow)';
-            }
-        );
-    }
-
-    submitReport(event) {
+    async submitReport(event) {
         event.preventDefault();
         const form = event.target;
         const formData = new FormData(form);
-
-        // Validate location
-        if (!formData.get('lat') || !formData.get('lng')) {
-            showToast('Please get your location first', 'error');
-            return;
-        }
-
-        // Handle photo
         const photoFile = formData.get('photo');
+        const user = auth.currentUser;
+
         if (!photoFile) {
             showToast('Please select a photo', 'error');
             return;
         }
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const report = {
-                photoBase64: e.target.result,
-                lat: parseFloat(formData.get('lat')),
-                lng: parseFloat(formData.get('lng')),
-                note: formData.get('note'),
-                category: formData.get('category'),
-                buildingNonSegregating: formData.get('buildingNonSegregating') === 'on',
-                createdAt: new Date().toISOString(),
-                createdByUserId: auth.currentUser.id,
-                status: 'new'
-            };
+        // 1. Upload image to Supabase Storage
+        const fileName = `${user.id}/${Date.now()}_${photoFile.name}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('reports')
+            .upload(fileName, photoFile);
 
-            db.add('reports', report);
+        if (uploadError) {
+            console.error('Error uploading image:', uploadError);
+            showToast('Error uploading image. Please try again.', 'error');
+            return;
+        }
 
-            // Award points
-            const user = db.findById('users', auth.currentUser.id);
-            db.updateById('users', auth.currentUser.id, {
-                points: (user.points || 0) + 5
-            });
+        // 2. Get public URL of the uploaded image
+        const { data: urlData } = supabase.storage
+            .from('reports')
+            .getPublicUrl(uploadData.path);
 
-            showToast('Report submitted successfully! +5 points', 'success');
-            router.navigate('/map');
+        // 3. Insert report into Supabase database
+        const report = {
+            category: formData.get('category'),
+            photo_url: urlData.publicUrl,
+            note: formData.get('note'),
+            lat: parseFloat(formData.get('lat')),
+            lng: parseFloat(formData.get('lng')),
+            user_id: user.id,
         };
 
-        reader.readAsDataURL(photoFile);
+        const { data: reportData, error: reportError } = await supabase
+            .from('reports')
+            .insert([report])
+            .select();
+
+        if (reportError) {
+            console.error('Error creating report:', reportError);
+            showToast('Error creating report. Please try again.', 'error');
+            return;
+        }
+
+        // 4. Award points (optional, can be a serverless function later)
+        // For now, we'll skip this to avoid direct client-side leaderboard updates
+
+        showToast('Report submitted successfully!', 'success');
+        window.router.navigate('/map');
+        return reportData[0];
+    }
+
+    async loadReports() {
+        const { data, error } = await supabase.from('reports').select('*');
+        if (error) {
+            console.error('Error loading reports:', error);
+            return [];
+        }
+        return data;
     }
 }
 

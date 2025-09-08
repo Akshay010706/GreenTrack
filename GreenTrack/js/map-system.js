@@ -1,5 +1,7 @@
-import { db } from './db.js';
+import { supabase } from './supabase-client.js';
 import { formatDate, showToast } from './utils.js';
+import { reportSystem } from './report-system.js';
+import { facilitySystem } from './facility-system.js';
 
 class MapSystem {
     constructor() {
@@ -80,6 +82,16 @@ class MapSystem {
         this.loadFacilities();
         this.updateStats();
         this.initTabs();
+        this.subscribeToReportChanges();
+    }
+
+    subscribeToReportChanges() {
+        supabase.channel('public:reports')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'reports' }, payload => {
+                console.log('Change received!', payload);
+                this.refreshMap();
+            })
+            .subscribe();
     }
 
     initTabs() {
@@ -109,9 +121,9 @@ class MapSystem {
         this.loadFacilities();
     }
 
-    loadReports() {
+    async loadReports() {
         this.reportLayer.clearLayers();
-        const reports = db.getAll('reports');
+        const reports = await reportSystem.loadReports();
 
         reports.forEach(report => {
             let color = 'red';
@@ -123,22 +135,19 @@ class MapSystem {
                 radius: 8
             }).addTo(this.reportLayer);
 
-            const user = db.findById('users', report.createdByUserId);
             marker.bindPopup(`
                 <strong>${report.category.toUpperCase()}</strong><br>
-                Reporter: ${user ? user.name : 'Unknown'}<br>
-                Date: ${formatDate(report.createdAt)}<br>
+                Date: ${formatDate(report.created_at)}<br>
                 Status: ${report.status}<br>
                 ${report.note ? `Note: ${report.note}<br>` : ''}
-                ${report.buildingNonSegregating ? '⚠️ Non-segregating building<br>' : ''}
-                <img src="${report.photoBase64}" style="width:200px;height:auto;margin-top:5px;">
+                <img src="${report.photo_url}" style="width:200px;height:auto;margin-top:5px;">
             `);
         });
     }
 
-    loadFacilities() {
+    async loadFacilities() {
         this.facilityLayer.clearLayers();
-        const facilities = db.getAll('facilities');
+        const facilities = await facilitySystem.loadFacilities();
 
         facilities.forEach(facility => {
             let icon = '♻️';
@@ -201,8 +210,8 @@ class MapSystem {
         }, 2000);
     }
 
-    updateStats() {
-        const reports = db.getAll('reports');
+    async updateStats() {
+        const reports = await reportSystem.loadReports();
         const statsEl = document.getElementById('map-stats');
 
         if (!statsEl) return;

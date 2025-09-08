@@ -1,8 +1,17 @@
-import { db } from './db.js';
+import { supabase } from './supabase-client.js';
 
 class FacilitySystem {
-    renderFacilities() {
-        const facilities = db.getAll('facilities');
+    async loadFacilities() {
+        const { data, error } = await supabase.from('facilities').select('*');
+        if (error) {
+            console.error('Error loading facilities:', error);
+            return [];
+        }
+        return data;
+    }
+
+    async renderFacilities() {
+        const facilities = await this.loadFacilities();
         const searchTerm = new URLSearchParams(window.location.hash.split('?')[1] || '').get('search') || '';
 
         const filtered = facilities.filter(f =>
@@ -54,7 +63,7 @@ class FacilitySystem {
     }
 
     initMap() {
-        setTimeout(() => {
+        setTimeout(async () => {
             if (this.map) {
                 this.map.remove();
             }
@@ -65,33 +74,28 @@ class FacilitySystem {
                 attribution: '© OpenStreetMap contributors'
             }).addTo(this.map);
 
-            this.loadFacilities();
+            const facilities = await this.loadFacilities();
+            facilities.forEach(facility => {
+                let icon = '♻️';
+                if (facility.type === 'compost') icon = '🌿';
+                if (facility.type === 'scrap') icon = '🔧';
+
+                const marker = L.marker([facility.lat, facility.lng], {
+                    icon: L.divIcon({
+                        html: icon,
+                        className: 'facility-icon',
+                        iconSize: [25, 25]
+                    })
+                }).addTo(this.map);
+
+                marker.bindPopup(`
+                    <strong>${facility.name}</strong><br>
+                    Type: ${facility.type}<br>
+                    Address: ${facility.address}<br>
+                    Hours: ${facility.hours}
+                `);
+            });
         }, 100);
-    }
-
-    loadFacilities() {
-        const facilities = db.getAll('facilities');
-
-        facilities.forEach(facility => {
-            let icon = '♻️';
-            if (facility.type === 'compost') icon = '🌿';
-            if (facility.type === 'scrap') icon = '🔧';
-
-            const marker = L.marker([facility.lat, facility.lng], {
-                icon: L.divIcon({
-                    html: icon,
-                    className: 'facility-icon',
-                    iconSize: [25, 25]
-                })
-            }).addTo(this.map);
-
-            marker.bindPopup(`
-                <strong>${facility.name}</strong><br>
-                Type: ${facility.type}<br>
-                Address: ${facility.address}<br>
-                Hours: ${facility.hours}
-            `);
-        });
     }
 
     search(term) {
@@ -100,8 +104,18 @@ class FacilitySystem {
         window.location.hash = newUrl;
     }
 
-    showOnMap(facilityId) {
-        const facility = db.findById('facilities', facilityId);
+    async showOnMap(facilityId) {
+        const { data: facility, error } = await supabase
+            .from('facilities')
+            .select('*')
+            .eq('id', facilityId)
+            .single();
+
+        if (error) {
+            console.error('Error fetching facility:', error);
+            return;
+        }
+
         if (facility && this.map) {
             this.map.setView([facility.lat, facility.lng], 16);
         }

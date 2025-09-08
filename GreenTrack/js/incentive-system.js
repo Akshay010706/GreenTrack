@@ -1,12 +1,47 @@
-import { db } from './db.js';
+import { supabase } from './supabase-client.js';
 import { auth } from './auth.js';
 
 class IncentiveSystem {
-    renderLeaderboard() {
-        const users = db.getAll('users')
-            .filter(u => u.role === 'citizen')
-            .sort((a, b) => (b.points || 0) - (a.points || 0))
-            .slice(0, 10);
+    async addPoints(userId, points) {
+        const { data, error } = await supabase
+            .from('leaderboard')
+            .select('points')
+            .eq('user_id', userId)
+            .single();
+
+        if (error && error.code !== 'PGRST116') { // Ignore 'not found' error
+            console.error('Error fetching points:', error);
+            return;
+        }
+
+        const currentPoints = data ? data.points : 0;
+        const newPoints = currentPoints + points;
+
+        const { error: upsertError } = await supabase
+            .from('leaderboard')
+            .upsert({ user_id: userId, points: newPoints }, { onConflict: 'user_id' });
+
+        if (upsertError) {
+            console.error('Error updating points:', upsertError);
+        }
+    }
+
+    async fetchLeaderboard() {
+        const { data, error } = await supabase
+            .from('leaderboard')
+            .select('*')
+            .order('points', { ascending: false })
+            .limit(10);
+
+        if (error) {
+            console.error('Error fetching leaderboard:', error);
+            return [];
+        }
+        return data;
+    }
+
+    async renderLeaderboard() {
+        const users = await this.fetchLeaderboard();
 
         return `
             <div class="card">
@@ -20,25 +55,16 @@ class IncentiveSystem {
                                 <th>Rank</th>
                                 <th>Name</th>
                                 <th>Points</th>
-                                <th>Status</th>
-                                <th>Badges</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${users.map((user, index) => `
-                                <tr ${auth.currentUser && auth.currentUser.id === user.id ? 'style="background: var(--accent-color); color: white;"' : ''}>
+                                <tr ${auth.currentUser && auth.currentUser.id === user.user_id ? 'style="background: var(--accent-color); color: white;"' : ''}>
                                     <td>
                                         ${index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
                                     </td>
-                                    <td>${user.name}</td>
+                                    <td>${user.user_id}</td>
                                     <td>${user.points || 0}</td>
-                                    <td>
-                                        ${user.trained ? '<span class="badge success">Green Certified</span>' : '<span class="badge">Not Certified</span>'}
-                                    </td>
-                                    <td>
-                                        ${user.trained ? '🌱 Green Expert' : ''}
-                                        ${(user.points || 0) >= 100 ? '⭐ Super Contributor' : ''}
-                                    </td>
                                 </tr>
                             `).join('')}
                         </tbody>
