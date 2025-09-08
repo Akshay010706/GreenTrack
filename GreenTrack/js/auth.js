@@ -1,5 +1,4 @@
 import { db } from './db.js';
-import { router } from './router.js';
 import { showToast } from './utils.js';
 
 class Auth {
@@ -24,7 +23,7 @@ class Auth {
     logout() {
         this.currentUser = null;
         localStorage.removeItem('currentSession');
-        router.navigate('/login');
+        // The router will handle the navigation to the login page
     }
 
     loadSession() {
@@ -44,7 +43,6 @@ class Auth {
 
     requireAuth() {
         if (!this.isAuthenticated()) {
-            router.navigate('/login');
             return false;
         }
         return true;
@@ -53,7 +51,6 @@ class Auth {
     requireRole(role) {
         if (!this.requireAuth() || !this.hasRole(role)) {
             showToast('Access denied', 'error');
-            router.navigate('/login');
             return false;
         }
         return true;

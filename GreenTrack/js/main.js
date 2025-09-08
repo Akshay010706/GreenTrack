@@ -8,6 +8,8 @@ import { facilitySystem } from './facility-system.js';
 import { incentiveSystem } from './incentive-system.js';
 import { renderProfile } from './profile.js';
 import { auth } from './auth.js';
+import { db } from './db.js';
+import { showModal, showToast, formatDate, formatDateTime } from './utils.js';
 
 // Make functions and objects available globally
 window.handleLogin = handleLogin;
@@ -19,6 +21,36 @@ window.dashboard = dashboard;
 window.facilitySystem = facilitySystem;
 window.incentiveSystem = incentiveSystem;
 window.auth = auth;
+
+function viewWorkerReport(reportId) {
+    const report = db.findById('reports', reportId);
+    if (!report) return;
+
+    const user = db.findById('users', report.createdByUserId);
+
+    showModal('Report Details', `
+        <div style="max-height: 400px; overflow-y: auto;">
+            <p><strong>Category:</strong> ${report.category}</p>
+            <p><strong>Reporter:</strong> ${user ? user.name : 'Unknown'}</p>
+            <p><strong>Date:</strong> ${formatDateTime(report.createdAt)}</p>
+            <p><strong>Status:</strong> ${report.status}</p>
+            <p><strong>Location:</strong> ${report.lat.toFixed(6)}, ${report.lng.toFixed(6)}</p>
+            ${report.note ? `<p><strong>Note:</strong> ${report.note}</p>` : ''}
+            ${report.buildingNonSegregating ? '<p><strong>⚠️ Non-segregating building reported</strong></p>' : ''}
+            <p><strong>Photo:</strong></p>
+            <img src="${report.photoBase64}" style="width: 100%; max-width: 300px; height: auto;">
+        </div>
+    `);
+}
+
+function assignReport(reportId) {
+    db.updateById('reports', reportId, { status: 'assigned' });
+    showToast('Report assigned successfully');
+    router.handleRoute(); // Refresh
+}
+
+window.viewWorkerReport = viewWorkerReport;
+window.assignReport = assignReport;
 
 // Register routes
 router.register('/login', () => {
@@ -70,12 +102,18 @@ router.register('/leaderboard', () => {
 });
 
 router.register('/profile', () => {
-    if (!auth.requireAuth()) return;
+    if (!auth.requireAuth()) {
+        router.navigate('/login');
+        return;
+    };
     document.getElementById('app').innerHTML = renderProfile();
 });
 
 router.register('/reports', () => {
-    if (!auth.requireRole('worker')) return;
+    if (!auth.requireRole('worker')) {
+        router.navigate('/login');
+        return;
+    }
 
     const reports = db.getAll('reports').sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
@@ -119,45 +157,6 @@ router.register('/reports', () => {
     `;
 });
 
-function viewWorkerReport(reportId) {
-    const report = db.findById('reports', reportId);
-    if (!report) return;
-
-    const user = db.findById('users', report.createdByUserId);
-
-    showModal('Report Details', `
-        <div style="max-height: 400px; overflow-y: auto;">
-            <p><strong>Category:</strong> ${report.category}</p>
-            <p><strong>Reporter:</strong> ${user ? user.name : 'Unknown'}</p>
-            <p><strong>Date:</strong> ${formatDateTime(report.createdAt)}</p>
-            <p><strong>Status:</strong> ${report.status}</p>
-            <p><strong>Location:</strong> ${report.lat.toFixed(6)}, ${report.lng.toFixed(6)}</p>
-            ${report.note ? `<p><strong>Note:</strong> ${report.note}</p>` : ''}
-            ${report.buildingNonSegregating ? '<p><strong>⚠️ Non-segregating building reported</strong></p>' : ''}
-            <p><strong>Photo:</strong></p>
-            <img src="${report.photoBase64}" style="width: 100%; max-width: 300px; height: auto;">
-        </div>
-    `);
-}
-
-function assignReport(reportId) {
-    db.updateById('reports', reportId, { status: 'assigned' });
-    showToast('Report assigned successfully');
-    router.handleRoute(); // Refresh
-}
-
-// Service Worker registration
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-            .then(registration => {
-                console.log('SW registered: ', registration);
-            })
-            .catch(registrationError => {
-                console.log('SW registration failed: ', registrationError);
-            });
-    });
-}
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
