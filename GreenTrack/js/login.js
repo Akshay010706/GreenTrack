@@ -1,8 +1,8 @@
 import { auth } from './auth.js';
-import { router } from './router.js';
 import { showToast } from './utils.js';
 
 function renderLogin() {
+    console.log('renderLogin called');
     return `
         <div style="max-width: 450px; margin: 4rem auto; text-align: center;">
             <div class="card" style="padding: 2.5rem; animation: fadeIn 0.5s ease-in-out;">
@@ -50,11 +50,11 @@ function handleLogin(event) {
         showToast('Login successful!');
         const role = result.user.role;
         if (role === 'citizen') {
-            router.navigate('/training');
+            window.router.navigate('/training');
         } else if (role === 'worker') {
-            router.navigate('/map');
+            window.router.navigate('/map');
         } else if (role === 'admin') {
-            router.navigate('/dashboard');
+            window.router.navigate('/dashboard');
         }
     } else {
         showToast(result.error, 'error');
@@ -67,11 +67,11 @@ function quickLogin(email, password) {
         showToast('Login successful!');
         const role = result.user.role;
         if (role === 'citizen') {
-            router.navigate('/training');
+            window.router.navigate('/training');
         } else if (role === 'worker') {
-            router.navigate('/map');
+            window.router.navigate('/map');
         } else if (role === 'admin') {
-            router.navigate('/dashboard');
+            window.router.navigate('/dashboard');
         }
     }
 }
