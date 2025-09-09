@@ -19,7 +19,28 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
     <!-- Supabase Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+        // Verify Supabase loaded
+        window.addEventListener('load', function() {
+            if (typeof Supabase === 'undefined') {
+                console.error('Supabase failed to load from unpkg, trying jsdelivr...');
+                var script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js';
+                script.onload = function() {
+                    console.log('Supabase loaded from jsdelivr');
+                };
+                script.onerror = function() {
+                    console.error('Failed to load Supabase from both CDNs');
+                    document.getElementById('js-fallback').style.display = 'block';
+                    document.getElementById('js-fallback').textContent = 'Error: Could not load Supabase. Please try refreshing the page.';
+                };
+                document.head.appendChild(script);
+            } else {
+                console.log('Supabase loaded successfully from unpkg');
+            }
+        });
+    </script>
 
     <!-- Environment Variables -->
     <script src="inject-env.js"></script>

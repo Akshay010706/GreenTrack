@@ -7,12 +7,30 @@ const SUPABASE_ANON_KEY = window.ENV?.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI
 
 // Initialize Supabase
 let supabase = null;
-if (typeof Supabase === 'undefined') {
-    console.error('Supabase not loaded!');
-} else {
-    console.log('Supabase loaded successfully');
-    supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function initializeSupabase() {
+    if (typeof Supabase === 'undefined') {
+        console.error('Supabase not loaded!');
+        showToast('Loading database connection...', 'error');
+        return false;
+    } else {
+        console.log('Supabase loaded successfully');
+        supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log('Supabase client created');
+        return true;
+    }
 }
+
+// Try to initialize immediately
+initializeSupabase();
+
+// Also try after page load
+window.addEventListener('load', function() {
+    if (!supabase) {
+        console.log('Retrying Supabase initialization...');
+        initializeSupabase();
+    }
+});
 
 // Utility Functions
 function showToast(message, type = 'success') {
