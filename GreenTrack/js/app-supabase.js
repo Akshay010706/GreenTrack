@@ -984,23 +984,29 @@ async function handleLogin(event) {
     submitBtn.textContent = 'Signing In...';
 
     try {
-        // Use demo authentication system (works without Supabase)
-        const userName = email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1);
+        // Check against registered users database
+        const users = window.dashboard.getAllUsers();
+        const user = users.find(u => u.email === email && u.role === role);
+        
+        if (!user) {
+            showToast(`No ${role} account found with email ${email}. Please sign up first or check your role selection.`, 'error');
+            return;
+        }
         
         // Create user session
         window.auth.currentUser = {
-            id: 'user-' + Date.now(),
-            email: email,
-            name: userName,
-            role: role,
-            points: role === 'citizen' ? Math.floor(Math.random() * 100) : 0,
-            trained: role === 'citizen'
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            points: user.points || 0,
+            trained: user.trained || false
         };
         
         // Store in localStorage for persistence
         localStorage.setItem('greentrack_user', JSON.stringify(window.auth.currentUser));
         
-        showToast(`Welcome, ${userName}! Logged in as ${role}.`);
+        showToast(`Welcome back, ${user.name}! Logged in as ${role}.`);
         
         // Navigate based on role
         if (role === 'citizen') {
@@ -1023,20 +1029,49 @@ async function handleSignUp(event) {
     event.preventDefault();
     const form = event.target;
     const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creating Account...';
 
-    const result = await window.auth.signUp(
-        formData.get('email'),
-        formData.get('password'),
-        formData.get('name'),
-        formData.get('role')
-    );
-
-    if (result.success) {
-        showToast('Account created! You can now sign in.');
-        // Switch to login tab
+    try {
+        const email = formData.get('email');
+        const password = formData.get('password');
+        const name = formData.get('name');
+        const role = formData.get('role');
+        
+        // Use demo system instead of Supabase
+        const users = window.dashboard.getAllUsers();
+        
+        // Check if email already exists
+        const existingUser = users.find(u => u.email === email);
+        if (existingUser) {
+            showToast('Email already exists. Please use a different email or sign in.', 'error');
+            return;
+        }
+        
+        // Create new user
+        const newUser = {
+            name: name,
+            email: email,
+            role: role,
+            points: role === 'citizen' ? 10 : 0, // Welcome points for citizens
+            trained: false
+        };
+        
+        window.dashboard.addUser(newUser);
+        
+        showToast(`Account created successfully! Welcome ${name}. You can now sign in.`);
+        
+        // Clear form and switch to login tab
+        form.reset();
         showLoginTab();
-    } else {
-        showToast(result.error?.message || 'Error creating account', 'error');
+        
+    } catch (error) {
+        showToast('Error creating account. Please try again.', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '✨ Create Account';
     }
 }
 
