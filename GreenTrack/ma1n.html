@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GreenTrack - Digital Waste Management Platform</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2d5a27">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+
+    <!-- Leaflet JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <noscript>
+        <div style="padding: 2rem; text-align: center;">
+            <h1>JavaScript Required</h1>
+            <p>This application requires JavaScript to function properly. Please enable JavaScript in your browser.</p>
+        </div>
+    </noscript>
+
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <span>🌱</span>
+                <span>GreenTrack</span>
+            </div>
+            <nav class="nav" id="nav">
+                <!-- Navigation will be populated by JavaScript -->
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content" id="main-content">
+        <div id="app">
+            <!-- App content will be populated by JavaScript -->
+            <noscript><p style="color:red;text-align:center;">JavaScript is required to view this application.</p></noscript>
+            <div id="js-fallback" style="display:none;color:red;text-align:center;">If you see this message, JavaScript failed to load. Please check the console for errors.</div>
+        </div>
+    </main>
+
+    <!-- Toast container -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Modal container -->
+    <div id="modal" class="modal">
+        <div class="modal-content" id="modal-content">
+            <!-- Modal content will be populated by JavaScript -->
+        </div>
+    </div>
+   <script src="js/app-complete.js" onerror="document.getElementById('js-fallback').style.display='block';console.error('Failed to load app-complete.js');"></script>
+</body>
+</html>

@@ -1,26 +1,16 @@
 const CACHE_NAME = 'greentrack-v1';
 const urlsToCache = [
-    '/',
-    '/index.html',
-    '/landing.html',
-    '/styles.css',
-    '/landing.css',
-    '/js/main.js',
-    '/js/auth.js',
-    '/js/db.js',
-    '/js/router.js',
-    '/js/utils.js',
-    '/js/training.js',
-    '/js/report-system.js',
-    '/js/map-system.js',
-    '/js/dashboard.js',
-    '/js/facility-system.js',
-    '/js/incentive-system.js',
-    '/js/profile.js',
-    '/js/login.js',
+    './',
+    './index.html',
+    './ma1n.html',
+    './styles.css',
+    './landing.css',
+    './js/app-complete.js',
+    './manifest.json',
     'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',
     'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
-    'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js'
+    'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js',
+    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
 ];
 
 self.addEventListener('install', event => {

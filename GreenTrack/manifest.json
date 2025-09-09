@@ -2,7 +2,7 @@
     "name": "GreenTrack - Digital Waste Management",
     "short_name": "GreenTrack",
     "description": "Digital waste management and training platform",
-    "start_url": "/",
+    "start_url": "./ma1n.html",
     "display": "standalone",
     "background_color": "#2d5a27",
     "theme_color": "#2d5a27",
