@@ -31,31 +31,54 @@
                     auth: {
                         signUp: async function(options) {
                             console.log('SignUp called:', options);
-                            const response = await fetch(url + '/auth/v1/signup', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'apikey': key,
-                                    'Authorization': 'Bearer ' + key
-                                },
-                                body: JSON.stringify(options)
-                            });
-                            const data = await response.json();
-                            return { data, error: data.error || null };
+                            try {
+                                const response = await fetch(url + '/auth/v1/signup', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'apikey': key,
+                                        'Authorization': 'Bearer ' + key
+                                    },
+                                    body: JSON.stringify({
+                                        email: options.email,
+                                        password: options.password,
+                                        data: options.options?.data || {}
+                                    })
+                                });
+                                const data = await response.json();
+                                if (!response.ok) {
+                                    return { data: null, error: data };
+                                }
+                                return { data, error: null };
+                            } catch (error) {
+                                console.error('SignUp error:', error);
+                                return { data: null, error: { message: error.message } };
+                            }
                         },
                         signInWithPassword: async function(credentials) {
                             console.log('SignIn called:', credentials);
-                            const response = await fetch(url + '/auth/v1/token?grant_type=password', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'apikey': key,
-                                    'Authorization': 'Bearer ' + key
-                                },
-                                body: JSON.stringify(credentials)
-                            });
-                            const data = await response.json();
-                            return { data, error: data.error || null };
+                            try {
+                                const response = await fetch(url + '/auth/v1/token?grant_type=password', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'apikey': key,
+                                        'Authorization': 'Bearer ' + key
+                                    },
+                                    body: JSON.stringify({
+                                        email: credentials.email,
+                                        password: credentials.password
+                                    })
+                                });
+                                const data = await response.json();
+                                if (!response.ok) {
+                                    return { data: null, error: data };
+                                }
+                                return { data, error: null };
+                            } catch (error) {
+                                console.error('SignIn error:', error);
+                                return { data: null, error: { message: error.message } };
+                            }
                         },
                         signOut: async function() {
                             console.log('SignOut called');

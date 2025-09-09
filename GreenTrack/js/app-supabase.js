@@ -148,14 +148,18 @@ class Auth {
         }
     }
 
-    async signUp(email, password, name) {
-        if (!supabase) return { success: false, error: 'Supabase not available' };
+    async signUp(email, password, name, role = 'citizen') {
+        if (!supabase) {
+            // For demo purposes, create a mock user
+            console.log('Demo signup:', { email, password, name, role });
+            return { success: true, data: { user: { email, id: 'demo-' + Date.now() } } };
+        }
 
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
-                data: { name }
+                data: { name, role }
             }
         });
 
@@ -164,7 +168,7 @@ class Auth {
         }
 
         return { success: true, data };
-    }
+    },
 
     async signIn(email, password) {
         if (!supabase) return { success: false, error: 'Supabase not available' };
@@ -756,61 +760,83 @@ class Router {
 // Login functions
 function renderLogin() {
     return `
-        <div style="max-width: 450px; margin: 4rem auto; text-align: center;">
-            <div class="card" style="padding: 2.5rem;">
-                <span style="font-size: 4rem; display: block;">🌱</span>
-                <h1 style="margin-bottom: 1rem; font-size: 2.5rem;">Welcome to GreenTrack</h1>
-                <p style="color: var(--text-secondary); margin-bottom: 2.5rem; font-size: 1.1rem;">
-                    Your digital platform for a cleaner, greener community. Report issues, get trained, and earn rewards.
-                </p>
+        <div style="max-width: 500px; margin: 2rem auto; text-align: center;">
+            <div class="card" style="padding: 2.5rem; background: linear-gradient(135deg, rgba(45, 90, 39, 0.1) 0%, rgba(56, 142, 60, 0.1) 100%); border: 1px solid rgba(45, 90, 39, 0.2);">
+                <div style="margin-bottom: 2rem;">
+                    <span style="font-size: 3.5rem; display: block; margin-bottom: 0.5rem;">🌱</span>
+                    <h1 style="margin: 0 0 0.5rem 0; font-size: 2.2rem; color: var(--primary-color);">Welcome to GreenTrack</h1>
+                    <p style="color: var(--text-secondary); margin-bottom: 0; font-size: 1rem; line-height: 1.5;">
+                        Your digital platform for a cleaner, greener community
+                    </p>
+                </div>
 
                 <div class="tabs" style="margin-bottom: 2rem;">
-                    <div class="tab-nav" style="justify-content: center;">
-                        <button class="tab-btn active" onclick="showLoginTab()">Sign In</button>
-                        <button class="tab-btn" onclick="showSignUpTab()">Sign Up</button>
+                    <div class="tab-nav" style="justify-content: center; background: rgba(0,0,0,0.05); border-radius: 8px; padding: 4px;">
+                        <button class="tab-btn active" onclick="showLoginTab()" style="border-radius: 6px; padding: 0.75rem 1.5rem;">Sign In</button>
+                        <button class="tab-btn" onclick="showSignUpTab()" style="border-radius: 6px; padding: 0.75rem 1.5rem;">Sign Up</button>
                     </div>
                 </div>
 
                 <div id="login-tab" class="tab-content active">
                     <form id="login-form" onsubmit="handleLogin(event)" style="text-align: left;">
                         <div class="form-group">
-                            <label class="form-label">Email</label>
-                            <input type="email" class="form-control" name="email" required>
+                            <label class="form-label" style="font-weight: 600;">Email Address</label>
+                            <input type="email" class="form-control" name="email" required placeholder="Enter your email" style="padding: 0.875rem; border-radius: 8px;">
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Password</label>
-                            <input type="password" class="form-control" name="password" required>
+                            <label class="form-label" style="font-weight: 600;">Password</label>
+                            <input type="password" class="form-control" name="password" required placeholder="Enter your password" style="padding: 0.875rem; border-radius: 8px;">
                         </div>
 
-                        <button type="submit" class="btn" style="width: 100%; margin-bottom: 1rem;">Sign In</button>
+                        <button type="submit" class="btn" style="width: 100%; margin-bottom: 1rem; padding: 0.875rem; border-radius: 8px; font-weight: 600; background: linear-gradient(135deg, var(--primary-color) 0%, #388e3c 100%); border: none; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='translateY(0)'">
+                            🔐 Sign In
+                        </button>
                     </form>
 
-                    <button class="btn btn-secondary" onclick="signInWithGoogle()" style="width: 100%;">
-                        <span style="margin-right: 0.5rem;">🔍</span>
-                        Sign in with Google
+                    <div style="margin: 1rem 0; color: var(--text-secondary); font-size: 0.9rem;">or</div>
+
+                    <button class="btn btn-secondary" onclick="signInWithDemo()" style="width: 100%; padding: 0.875rem; border-radius: 8px; margin-bottom: 0.5rem; background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%); border: none; color: white; font-weight: 600;">
+                        <span style="margin-right: 0.5rem;">👤</span>
+                        Try Demo Account
                     </button>
                 </div>
 
                 <div id="signup-tab" class="tab-content" style="display: none;">
                     <form id="signup-form" onsubmit="handleSignUp(event)" style="text-align: left;">
                         <div class="form-group">
-                            <label class="form-label">Name</label>
-                            <input type="text" class="form-control" name="name" required>
+                            <label class="form-label" style="font-weight: 600;">Full Name</label>
+                            <input type="text" class="form-control" name="name" required placeholder="Enter your full name" style="padding: 0.875rem; border-radius: 8px;">
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Email</label>
-                            <input type="email" class="form-control" name="email" required>
+                            <label class="form-label" style="font-weight: 600;">Email Address</label>
+                            <input type="email" class="form-control" name="email" required placeholder="Enter your email" style="padding: 0.875rem; border-radius: 8px;">
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Password</label>
-                            <input type="password" class="form-control" name="password" required minlength="6">
+                            <label class="form-label" style="font-weight: 600;">Password</label>
+                            <input type="password" class="form-control" name="password" required minlength="6" placeholder="Create a strong password" style="padding: 0.875rem; border-radius: 8px;">
                         </div>
 
-                        <button type="submit" class="btn" style="width: 100%;">Sign Up</button>
+                        <div class="form-group">
+                            <label class="form-label" style="font-weight: 600;">Role</label>
+                            <select name="role" class="form-control" required style="padding: 0.875rem; border-radius: 8px;">
+                                <option value="">Select your role</option>
+                                <option value="citizen">🏠 Citizen - Report waste issues</option>
+                                <option value="worker">👷 Worker - Manage waste collection</option>
+                                <option value="admin">👑 Admin - Full access</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn" style="width: 100%; padding: 0.875rem; border-radius: 8px; font-weight: 600; background: linear-gradient(135deg, var(--primary-color) 0%, #388e3c 100%); border: none;">
+                            ✨ Create Account
+                        </button>
                     </form>
+                </div>
+
+                <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid rgba(0,0,0,0.1); font-size: 0.9rem; color: var(--text-secondary);">
+                    <p style="margin: 0;">🔒 Your data is secure and protected</p>
                 </div>
             </div>
         </div>
@@ -837,16 +863,38 @@ async function handleLogin(event) {
     event.preventDefault();
     const form = event.target;
     const formData = new FormData(form);
+    
+    const submitBtn = form.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Signing In...';
 
-    const result = await window.auth.signIn(
-        formData.get('email'),
-        formData.get('password')
-    );
+    try {
+        const result = await window.auth.signIn(
+            formData.get('email'),
+            formData.get('password')
+        );
 
-    if (result.success) {
-        showToast('Login successful!');
-    } else {
-        showToast(result.error, 'error');
+        if (result.success) {
+            const user = window.auth.currentUser;
+            showToast(`Welcome back, ${user?.name || 'User'}! (${user?.role || 'citizen'})`);
+            
+            // Navigate based on role
+            const role = user?.role || 'citizen';
+            if (role === 'citizen') {
+                window.router.navigate('/report');
+            } else if (role === 'worker') {
+                window.router.navigate('/reports');
+            } else if (role === 'admin') {
+                window.router.navigate('/dashboard');
+            }
+        } else {
+            showToast(result.error?.message || 'Login failed. Try the demo account.', 'error');
+        }
+    } catch (error) {
+        showToast('Login error. Try the demo account.', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '🔐 Sign In';
     }
 }
 
@@ -858,13 +906,64 @@ async function handleSignUp(event) {
     const result = await window.auth.signUp(
         formData.get('email'),
         formData.get('password'),
-        formData.get('name')
+        formData.get('name'),
+        formData.get('role')
     );
 
     if (result.success) {
-        showToast('Account created! Please check your email for verification.');
+        showToast('Account created! You can now sign in.');
+        // Switch to login tab
+        showLoginTab();
     } else {
-        showToast(result.error, 'error');
+        showToast(result.error?.message || 'Error creating account', 'error');
+    }
+}
+
+function signInWithDemo() {
+    // Show demo account options
+    showModal('Demo Accounts', `
+        <div style="text-align: left;">
+            <p>Choose a demo account to try different roles:</p>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; margin: 1rem 0;">
+                <button class="btn" onclick="demoLogin('citizen')" style="padding: 0.75rem; text-align: left;">
+                    🏠 <strong>Citizen Demo</strong><br>
+                    <small>Report waste issues, view map, earn points</small>
+                </button>
+                <button class="btn" onclick="demoLogin('worker')" style="padding: 0.75rem; text-align: left;">
+                    👷 <strong>Worker Demo</strong><br>
+                    <small>Manage waste reports, update statuses</small>
+                </button>
+                <button class="btn" onclick="demoLogin('admin')" style="padding: 0.75rem; text-align: left;">
+                    👑 <strong>Admin Demo</strong><br>
+                    <small>Full dashboard, manage all reports</small>
+                </button>
+            </div>
+        </div>
+    `);
+}
+
+async function demoLogin(role) {
+    hideModal();
+    
+    // Create demo user session
+    window.auth.currentUser = {
+        id: 'demo-' + role,
+        email: `${role}@demo.greentrack.app`,
+        name: `${role.charAt(0).toUpperCase() + role.slice(1)} Demo`,
+        role: role,
+        points: role === 'citizen' ? 50 : 0,
+        trained: role === 'citizen'
+    };
+    
+    showToast(`Welcome! Signed in as ${role} demo account.`);
+    
+    // Navigate based on role
+    if (role === 'citizen') {
+        window.router.navigate('/report');
+    } else if (role === 'worker') {
+        window.router.navigate('/reports');
+    } else if (role === 'admin') {
+        window.router.navigate('/dashboard');
     }
 }
 
@@ -1118,6 +1217,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.signOut = signOut;
         window.showLoginTab = showLoginTab;
         window.showSignUpTab = showSignUpTab;
+        window.signInWithDemo = signInWithDemo;
+        window.demoLogin = demoLogin;
         window.getCurrentLocation = getCurrentLocation;
         window.submitReport = submitReport;
         window.viewReport = viewReport;
