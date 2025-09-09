@@ -82,25 +82,56 @@ class Auth {
     }
 
     async init() {
-        if (!supabase) return;
-        
-        // Get current session
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-            await this.setCurrentUser(session.user);
-        }
-
-        // Listen for auth changes
-        supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log('Auth state changed:', event);
-            if (event === 'SIGNED_IN' && session?.user) {
-                await this.setCurrentUser(session.user);
-                window.router.navigate('/dashboard');
-            } else if (event === 'SIGNED_OUT') {
-                this.currentUser = null;
-                window.router.navigate('/login');
+        // Check localStorage for existing user session
+        const savedUser = localStorage.getItem('greentrack_user');
+        if (savedUser) {
+            try {
+                this.currentUser = JSON.parse(savedUser);
+                console.log('Loaded user from localStorage:', this.currentUser);
+            } catch (error) {
+                console.error('Error loading saved user:', error);
+                localStorage.removeItem('greentrack_user');
             }
-        });
+        }
+        
+        // Initialize demo users database
+        this.initDemoUsers();
+    }
+    
+    initDemoUsers() {
+        const existingUsers = localStorage.getItem('greentrack_all_users');
+        if (!existingUsers) {
+            const defaultUsers = [
+                {
+                    id: 'admin-001',
+                    email: 'admin@greentrack.app',
+                    name: 'System Administrator',
+                    role: 'admin',
+                    points: 0,
+                    trained: true,
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'worker-001', 
+                    email: 'worker@greentrack.app',
+                    name: 'Waste Worker',
+                    role: 'worker',
+                    points: 0,
+                    trained: true,
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'citizen-001',
+                    email: 'citizen@greentrack.app', 
+                    name: 'Demo Citizen',
+                    role: 'citizen',
+                    points: 75,
+                    trained: true,
+                    createdAt: new Date().toISOString()
+                }
+            ];
+            localStorage.setItem('greentrack_all_users', JSON.stringify(defaultUsers));
+        }
     }
 
     async setCurrentUser(authUser) {
@@ -357,6 +388,41 @@ class ReportSystem {
 
 // Dashboard Class - Supabase Integration
 class Dashboard {
+    getAllUsers() {
+        const users = localStorage.getItem('greentrack_all_users');
+        return users ? JSON.parse(users) : [];
+    }
+    
+    addUser(userData) {
+        const users = this.getAllUsers();
+        const newUser = {
+            id: 'user-' + Date.now(),
+            ...userData,
+            createdAt: new Date().toISOString()
+        };
+        users.push(newUser);
+        localStorage.setItem('greentrack_all_users', JSON.stringify(users));
+        return newUser;
+    }
+    
+    updateUser(userId, updates) {
+        const users = this.getAllUsers();
+        const index = users.findIndex(u => u.id === userId);
+        if (index !== -1) {
+            users[index] = { ...users[index], ...updates };
+            localStorage.setItem('greentrack_all_users', JSON.stringify(users));
+            return users[index];
+        }
+        return null;
+    }
+    
+    deleteUser(userId) {
+        const users = this.getAllUsers();
+        const filteredUsers = users.filter(u => u.id !== userId);
+        localStorage.setItem('greentrack_all_users', JSON.stringify(filteredUsers));
+        return true;
+    }
+
     async renderDashboard() {
         if (!window.auth.requireRole('admin')) return '';
 
@@ -388,35 +454,70 @@ class Dashboard {
                     </div>
                 </div>
 
-                <div class="card">
-                    <h2>Recent Reports</h2>
-                    <div class="table-container" style="overflow-x: auto;">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Category</th>
-                                    <th>Reporter</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${reports.slice(0, 10).map(report => `
+                <div class="grid grid-2" style="gap: 2rem;">
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h2>User Management</h2>
+                            <button class="btn btn-primary" onclick="showAddUserModal()" style="padding: 0.5rem 1rem;">+ Add User</button>
+                        </div>
+                        <div class="table-container" style="overflow-x: auto; max-height: 400px;">
+                            <table class="table">
+                                <thead>
                                     <tr>
-                                        <td>${formatDate(report.created_at)}</td>
-                                        <td><span class="badge">${report.category}</span></td>
-                                        <td>${report.users?.name || 'Unknown'}</td>
-                                        <td><span class="badge ${report.status === 'resolved' ? 'success' : report.status === 'assigned' ? 'warning' : ''}">${report.status}</span></td>
-                                        <td>
-                                            <button class="btn btn-secondary" onclick="viewReport('${report.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">View</button>
-                                            ${report.status === 'new' ? `<button class="btn btn-warning" onclick="assignReport('${report.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.875rem; margin-left: 0.5rem;">Assign</button>` : ''}
-                                            ${report.status === 'assigned' ? `<button class="btn btn-success" onclick="resolveReport('${report.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.875rem; margin-left: 0.5rem;">Resolve</button>` : ''}
-                                        </td>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Points</th>
+                                        <th>Actions</th>
                                     </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    ${this.getAllUsers().map(user => `
+                                        <tr>
+                                            <td style="font-weight: 500;">${user.name}</td>
+                                            <td style="color: var(--text-secondary);">${user.email}</td>
+                                            <td><span class="badge ${user.role === 'admin' ? 'success' : user.role === 'worker' ? 'warning' : ''}">${user.role}</span></td>
+                                            <td>${user.points || 0}</td>
+                                            <td>
+                                                <button class="btn btn-secondary" onclick="editUser('${user.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; margin-right: 0.25rem;">Edit</button>
+                                                ${user.id !== window.auth.currentUser?.id ? `<button class="btn btn-danger" onclick="deleteUser('${user.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">Delete</button>` : ''}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h2>Recent Reports</h2>
+                        <div class="table-container" style="overflow-x: auto; max-height: 400px;">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Category</th>
+                                        <th>Reporter</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${reports.slice(0, 10).map(report => `
+                                        <tr>
+                                            <td>${formatDate(report.created_at || report.createdAt || new Date())}</td>
+                                            <td><span class="badge">${report.category || 'Unknown'}</span></td>
+                                            <td>${report.users?.name || report.reporterName || 'Unknown'}</td>
+                                            <td><span class="badge ${report.status === 'resolved' ? 'success' : report.status === 'assigned' ? 'warning' : ''}">${report.status || 'new'}</span></td>
+                                            <td>
+                                                <button class="btn btn-secondary" onclick="viewReport('${report.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">View</button>
+                                                ${report.status !== 'resolved' ? `<button class="btn btn-success" onclick="resolveReport('${report.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.875rem; margin-left: 0.5rem;">Resolve</button>` : ''}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -789,6 +890,16 @@ function renderLogin() {
                             <input type="password" class="form-control" name="password" required placeholder="Enter your password" style="padding: 0.875rem; border-radius: 8px;">
                         </div>
 
+                        <div class="form-group">
+                            <label class="form-label" style="font-weight: 600;">Login As</label>
+                            <select name="role" class="form-control" required style="padding: 0.875rem; border-radius: 8px; background: white;">
+                                <option value="">Select your role</option>
+                                <option value="citizen">🏠 Citizen - Report waste issues</option>
+                                <option value="worker">👷 Worker - Manage waste collection</option>
+                                <option value="admin">👑 Admin - Full system access</option>
+                            </select>
+                        </div>
+
                         <button type="submit" class="btn" style="width: 100%; margin-bottom: 1rem; padding: 0.875rem; border-radius: 8px; font-weight: 600; background: linear-gradient(135deg, var(--primary-color) 0%, #388e3c 100%); border: none; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='translateY(0)'">
                             🔐 Sign In
                         </button>
@@ -865,33 +976,43 @@ async function handleLogin(event) {
     const formData = new FormData(form);
     
     const submitBtn = form.querySelector('button[type="submit"]');
+    const email = formData.get('email');
+    const password = formData.get('password');
+    const role = formData.get('role');
+    
     submitBtn.disabled = true;
     submitBtn.textContent = 'Signing In...';
 
     try {
-        const result = await window.auth.signIn(
-            formData.get('email'),
-            formData.get('password')
-        );
-
-        if (result.success) {
-            const user = window.auth.currentUser;
-            showToast(`Welcome back, ${user?.name || 'User'}! (${user?.role || 'citizen'})`);
-            
-            // Navigate based on role
-            const role = user?.role || 'citizen';
-            if (role === 'citizen') {
-                window.router.navigate('/report');
-            } else if (role === 'worker') {
-                window.router.navigate('/reports');
-            } else if (role === 'admin') {
-                window.router.navigate('/dashboard');
-            }
-        } else {
-            showToast(result.error?.message || 'Login failed. Try the demo account.', 'error');
+        // Use demo authentication system (works without Supabase)
+        const userName = email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1);
+        
+        // Create user session
+        window.auth.currentUser = {
+            id: 'user-' + Date.now(),
+            email: email,
+            name: userName,
+            role: role,
+            points: role === 'citizen' ? Math.floor(Math.random() * 100) : 0,
+            trained: role === 'citizen'
+        };
+        
+        // Store in localStorage for persistence
+        localStorage.setItem('greentrack_user', JSON.stringify(window.auth.currentUser));
+        
+        showToast(`Welcome, ${userName}! Logged in as ${role}.`);
+        
+        // Navigate based on role
+        if (role === 'citizen') {
+            window.router.navigate('/report');
+        } else if (role === 'worker') {
+            window.router.navigate('/reports');
+        } else if (role === 'admin') {
+            window.router.navigate('/dashboard');
         }
+        
     } catch (error) {
-        showToast('Login error. Try the demo account.', 'error');
+        showToast('Login error. Please try again.', 'error');
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = '🔐 Sign In';
@@ -1194,6 +1315,135 @@ async function renderWorkerReports() {
     `;
 }
 
+// User management functions
+function showAddUserModal() {
+    showModal('Add New User', `
+        <form id="add-user-form" onsubmit="addUser(event)" style="text-align: left;">
+            <div class="form-group">
+                <label class="form-label">Name</label>
+                <input type="text" name="name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Role</label>
+                <select name="role" class="form-control" required>
+                    <option value="citizen">👤 Citizen</option>
+                    <option value="worker">👷 Worker</option>
+                    <option value="admin">👑 Admin</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Initial Points</label>
+                <input type="number" name="points" class="form-control" value="0" min="0">
+            </div>
+            <button type="submit" class="btn" style="margin-top: 1rem;">Add User</button>
+        </form>
+    `);
+}
+
+function addUser(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    const userData = {
+        name: formData.get('name'),
+        email: formData.get('email'),
+        role: formData.get('role'),
+        points: parseInt(formData.get('points')) || 0,
+        trained: false
+    };
+    
+    window.dashboard.addUser(userData);
+    hideModal();
+    showToast('User added successfully!');
+    window.router.handleRoute(); // Refresh the dashboard
+}
+
+function editUser(userId) {
+    const users = window.dashboard.getAllUsers();
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+    
+    showModal('Edit User', `
+        <form id="edit-user-form" onsubmit="updateUser(event, '${userId}')" style="text-align: left;">
+            <div class="form-group">
+                <label class="form-label">Name</label>
+                <input type="text" name="name" class="form-control" value="${user.name}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-control" value="${user.email}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Role</label>
+                <select name="role" class="form-control" required>
+                    <option value="citizen" ${user.role === 'citizen' ? 'selected' : ''}>👤 Citizen</option>
+                    <option value="worker" ${user.role === 'worker' ? 'selected' : ''}>👷 Worker</option>
+                    <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>👑 Admin</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Points</label>
+                <input type="number" name="points" class="form-control" value="${user.points || 0}" min="0">
+            </div>
+            <button type="submit" class="btn" style="margin-top: 1rem;">Update User</button>
+        </form>
+    `);
+}
+
+window.updateUser = function(event, userId) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    const updates = {
+        name: formData.get('name'),
+        email: formData.get('email'),
+        role: formData.get('role'),
+        points: parseInt(formData.get('points')) || 0
+    };
+    
+    window.dashboard.updateUser(userId, updates);
+    
+    // Update current user session if editing self
+    if (userId === window.auth.currentUser?.id) {
+        window.auth.currentUser = { ...window.auth.currentUser, ...updates };
+        localStorage.setItem('greentrack_user', JSON.stringify(window.auth.currentUser));
+    }
+    
+    hideModal();
+    showToast('User updated successfully!');
+    window.router.handleRoute();
+};
+
+function deleteUser(userId) {
+    const users = window.dashboard.getAllUsers();
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+    
+    showModal('Delete User', `
+        <p>Are you sure you want to delete <strong>${user.name}</strong> (${user.email})?</p>
+        <p style="color: var(--error-color); font-size: 0.9rem;">This action cannot be undone.</p>
+    `, [
+        {
+            text: 'Delete User',
+            class: 'btn-danger',
+            onclick: `confirmDeleteUser('${userId}')`
+        }
+    ]);
+}
+
+window.confirmDeleteUser = function(userId) {
+    window.dashboard.deleteUser(userId);
+    hideModal();
+    showToast('User deleted successfully!');
+    window.router.handleRoute();
+};
+
 // Initialize application
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOMContentLoaded fired');
@@ -1224,6 +1474,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.viewReport = viewReport;
         window.assignReport = assignReport;
         window.resolveReport = resolveReport;
+        window.showAddUserModal = showAddUserModal;
+        window.addUser = addUser;
+        window.editUser = editUser;
+        window.deleteUser = deleteUser;
 
         // Register routes
         window.router.register('/login', () => renderLogin());
