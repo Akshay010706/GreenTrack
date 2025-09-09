@@ -269,6 +269,40 @@ body {
     height: 400px;
     border-radius: 8px;
     overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+/* Map Icons */
+.user-location-icon {
+    background: none;
+    border: none;
+    font-size: 20px;
+    text-align: center;
+    line-height: 25px;
+}
+
+.leaflet-div-icon {
+    background: none !important;
+    border: none !important;
+}
+
+/* Card Header */
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.card-header h1 {
+    margin: 0;
+}
+
+.card-header div {
+    display: flex;
+    gap: 0.5rem;
 }
 
 /* Badge */

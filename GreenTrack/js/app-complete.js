@@ -934,20 +934,205 @@ async function resolveWorkerReport(reportId) {
     }
 }
 
-// Simple map placeholder
-function renderMap() {
-    return `
-        <div class="card">
-            <h1>🗺️ Interactive Map</h1>
-            <div style="height: 400px; background: #f0f0f0; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; margin: 1rem 0;">
-                <div style="text-align: center;">
-                    <h3>Interactive Map</h3>
-                    <p>Map showing waste reports and collection routes</p>
-                    <p style="color: #666;">Full map functionality requires the original modular code</p>
+// Map System Class
+class MapSystem {
+    constructor() {
+        this.map = null;
+        this.reportLayer = null;
+        this.currentLocation = [26.8467, 80.9462]; // Default to Lucknow
+    }
+
+    renderMap() {
+        return `
+            <div class="card">
+                <div class="card-header">
+                    <h1>🗺️ Waste Management Map</h1>
+                    <div>
+                        <button class="btn btn-secondary" onclick="window.mapSystem.refreshMap()">Refresh</button>
+                        <button class="btn btn-secondary" onclick="window.mapSystem.centerOnUser()">My Location</button>
+                    </div>
+                </div>
+
+                <div id="map" class="map-container" style="height: 500px; margin: 1rem 0;"></div>
+
+                <div class="grid grid-2" style="margin-top: 1rem;">
+                    <div class="card">
+                        <h3>Legend</h3>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <span>🔴 New Reports</span>
+                            <span>🟡 Assigned Reports</span>
+                            <span>🟢 Resolved Reports</span>
+                            <span>📍 Your Location</span>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>Statistics</h3>
+                        <div id="map-stats">Loading...</div>
+                    </div>
                 </div>
             </div>
-        </div>
-    `;
+        `;
+    }
+
+    async initMap() {
+        // Wait a bit for DOM to be ready
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const mapElement = document.getElementById('map');
+        if (!mapElement) {
+            console.error('Map element not found');
+            return;
+        }
+
+        if (this.map) {
+            this.map.remove();
+        }
+
+        try {
+            // Create map centered on current location
+            this.map = L.map('map').setView(this.currentLocation, 13);
+
+            // Add tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(this.map);
+
+            // Create layer for reports
+            this.reportLayer = L.layerGroup().addTo(this.map);
+
+            // Load reports on map
+            await this.loadReports();
+            this.updateStats();
+
+            console.log('Map initialized successfully');
+        } catch (error) {
+            console.error('Error initializing map:', error);
+            showToast('Error loading map', 'error');
+        }
+    }
+
+    async loadReports() {
+        if (!this.reportLayer) return;
+        
+        this.reportLayer.clearLayers();
+        
+        try {
+            const reports = await window.reportSystem.loadReports();
+
+            reports.forEach(report => {
+                if (!report.lat || !report.lng) return;
+
+                let color = '#dc3545'; // red for new
+                if (report.status === 'assigned') color = '#fd7e14'; // orange
+                if (report.status === 'resolved') color = '#28a745'; // green
+
+                const marker = L.circleMarker([report.lat, report.lng], {
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.8,
+                    radius: 8,
+                    weight: 2
+                }).addTo(this.reportLayer);
+
+                const reportDate = report.created_at || report.createdAt;
+                const formattedDate = reportDate ? formatDate(reportDate) : 'Unknown date';
+                
+                marker.bindPopup(`
+                    <div style="min-width: 200px;">
+                        <strong>${report.category.toUpperCase()}</strong><br>
+                        <strong>Date:</strong> ${formattedDate}<br>
+                        <strong>Status:</strong> <span style="color: ${color}">${report.status}</span><br>
+                        <strong>Location:</strong> ${report.lat.toFixed(4)}, ${report.lng.toFixed(4)}<br>
+                        ${report.note ? `<strong>Note:</strong> ${report.note}<br>` : ''}
+                        ${report.photo_url ? `<img src="${report.photo_url}" style="width:100%; max-width:200px; height:auto; margin-top:5px; border-radius:4px;">` : ''}
+                    </div>
+                `);
+            });
+
+            console.log(`Loaded ${reports.length} reports on map`);
+        } catch (error) {
+            console.error('Error loading reports on map:', error);
+        }
+    }
+
+    async updateStats() {
+        const statsEl = document.getElementById('map-stats');
+        if (!statsEl) return;
+
+        try {
+            const reports = await window.reportSystem.loadReports();
+            const stats = {
+                total: reports.length,
+                new: reports.filter(r => r.status === 'new').length,
+                assigned: reports.filter(r => r.status === 'assigned').length,
+                resolved: reports.filter(r => r.status === 'resolved').length
+            };
+
+            statsEl.innerHTML = `
+                <p><strong>Total Reports:</strong> ${stats.total}</p>
+                <p><strong>New:</strong> ${stats.new}</p>
+                <p><strong>Assigned:</strong> ${stats.assigned}</p>
+                <p><strong>Resolved:</strong> ${stats.resolved}</p>
+            `;
+        } catch (error) {
+            console.error('Error updating map stats:', error);
+            statsEl.innerHTML = '<p>Error loading statistics</p>';
+        }
+    }
+
+    centerOnUser() {
+        if ('geolocation' in navigator) {
+            showToast('Getting your location...');
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    this.currentLocation = [lat, lng];
+                    
+                    if (this.map) {
+                        this.map.setView([lat, lng], 15);
+                        
+                        // Add user location marker
+                        L.marker([lat, lng], {
+                            icon: L.divIcon({
+                                html: '📍',
+                                className: 'user-location-icon',
+                                iconSize: [25, 25]
+                            })
+                        }).addTo(this.map).bindPopup('Your Location');
+                        
+                        showToast('Centered on your location');
+                    }
+                },
+                (error) => {
+                    console.error('Geolocation error:', error);
+                    showToast('Could not get your location', 'error');
+                }
+            );
+        } else {
+            showToast('Geolocation not supported', 'error');
+        }
+    }
+
+    async refreshMap() {
+        await this.loadReports();
+        this.updateStats();
+        showToast('Map refreshed');
+    }
+}
+
+// Updated map render function
+function renderMap() {
+    const mapSystem = new MapSystem();
+    window.mapSystem = mapSystem; // Make it globally accessible
+    
+    // Initialize map after a short delay to ensure DOM is ready
+    setTimeout(() => {
+        mapSystem.initMap();
+    }, 100);
+    
+    return mapSystem.renderMap();
 }
 
 // Initialize application
