@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GreenTrack - Digital Waste Management Platform</title>
+    <title>GreenTrack - Digital Waste Management Platform - v2.0</title>
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
@@ -30,55 +30,33 @@
                 return {
                     auth: {
                         signUp: async function(options) {
-                            console.log('SignUp called:', options);
-                            try {
-                                const response = await fetch(url + '/auth/v1/signup', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'apikey': key,
-                                        'Authorization': 'Bearer ' + key
-                                    },
-                                    body: JSON.stringify({
-                                        email: options.email,
-                                        password: options.password,
-                                        data: options.options?.data || {}
-                                    })
-                                });
-                                const data = await response.json();
-                                if (!response.ok) {
-                                    return { data: null, error: data };
-                                }
-                                return { data, error: null };
-                            } catch (error) {
-                                console.error('SignUp error:', error);
-                                return { data: null, error: { message: error.message } };
-                            }
+                            console.log('Demo SignUp called:', options);
+                            // Demo signup - always succeeds
+                            return { 
+                                data: { 
+                                    user: { 
+                                        id: 'demo-' + Date.now(), 
+                                        email: options.email 
+                                    } 
+                                }, 
+                                error: null 
+                            };
                         },
                         signInWithPassword: async function(credentials) {
-                            console.log('SignIn called:', credentials);
-                            try {
-                                const response = await fetch(url + '/auth/v1/token?grant_type=password', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'apikey': key,
-                                        'Authorization': 'Bearer ' + key
+                            console.log('Demo SignIn called:', credentials);
+                            // Demo signin - always succeeds
+                            return { 
+                                data: { 
+                                    user: { 
+                                        id: 'demo-' + Date.now(), 
+                                        email: credentials.email 
                                     },
-                                    body: JSON.stringify({
-                                        email: credentials.email,
-                                        password: credentials.password
-                                    })
-                                });
-                                const data = await response.json();
-                                if (!response.ok) {
-                                    return { data: null, error: data };
-                                }
-                                return { data, error: null };
-                            } catch (error) {
-                                console.error('SignIn error:', error);
-                                return { data: null, error: { message: error.message } };
-                            }
+                                    session: {
+                                        access_token: 'demo-token'
+                                    }
+                                }, 
+                                error: null 
+                            };
                         },
                         signOut: async function() {
                             console.log('SignOut called');
@@ -214,6 +192,7 @@
             <!-- Modal content will be populated by JavaScript -->
         </div>
     </div>
-   <script src="js/app-supabase.js" onerror="document.getElementById('js-fallback').style.display='block';console.error('Failed to load app-supabase.js');"></script>
+   <!-- GreenTrack v2.0 - Updated with demo authentication -->
+   <script src="js/app-supabase.js?v=2.0" onerror="document.getElementById('js-fallback').style.display='block';console.error('Failed to load app-supabase.js');"></script>
 </body>
 </html>
