@@ -5,32 +5,33 @@ console.log('GreenTrack app-supabase.js loading...');
 const SUPABASE_URL = window.ENV?.VITE_SUPABASE_URL || 'https://ncbqpmlwqernubikpcry.supabase.co';
 const SUPABASE_ANON_KEY = window.ENV?.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jYnFwbWx3cWVybnViaWtwY3J5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczNDEyMzQsImV4cCI6MjA3MjkxNzIzNH0.k6odDMLIrTzBhXNy7KOK2yjQKK7zJTwz-e0QIRlywW0';
 
-// Initialize Supabase
+// Demo System Only - No real Supabase connections
 let supabase = null;
+console.log('🎯 Using DEMO SYSTEM ONLY - No real Supabase API calls');
 
-function initializeSupabase() {
-    if (typeof Supabase === 'undefined') {
-        console.error('Supabase not loaded!');
-        showToast('Loading database connection...', 'error');
-        return false;
-    } else {
-        console.log('Supabase loaded successfully');
-        supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        console.log('Supabase client created');
-        return true;
+// Create fake supabase object for compatibility
+supabase = {
+    auth: {
+        signUp: async () => ({ data: { user: { id: 'demo', email: 'demo' } }, error: null }),
+        signInWithPassword: async () => ({ data: { user: { id: 'demo', email: 'demo' } }, error: null }),
+        signOut: async () => ({ error: null }),
+        getSession: async () => ({ data: { session: null } }),
+        onAuthStateChange: () => ({ data: { subscription: {} } })
+    },
+    from: () => ({
+        select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: null, error: null }) }) }),
+        insert: () => ({ select: () => ({ single: () => Promise.resolve({ data: null, error: null }) }) }),
+        update: () => ({ eq: () => Promise.resolve({ data: null, error: null }) })
+    }),
+    storage: {
+        from: () => ({
+            upload: async () => ({ data: { path: 'demo' }, error: null }),
+            getPublicUrl: () => ({ data: { publicUrl: 'demo-url' } })
+        })
     }
-}
+};
 
-// Try to initialize immediately
-initializeSupabase();
-
-// Also try after page load
-window.addEventListener('load', function() {
-    if (!supabase) {
-        console.log('Retrying Supabase initialization...');
-        initializeSupabase();
-    }
-});
+console.log('✅ Demo Supabase client loaded - all operations will use localStorage');
 
 // Utility Functions
 function showToast(message, type = 'success') {
@@ -1350,6 +1351,179 @@ async function renderWorkerReports() {
     `;
 }
 
+// Admin reports function - detailed reports management
+async function renderAdminReports() {
+    if (!window.auth.requireRole('admin')) return '';
+
+    const reports = await window.reportSystem.loadReports();
+    
+    const stats = {
+        total: reports.length,
+        new: reports.filter(r => r.status === 'new').length,
+        assigned: reports.filter(r => r.status === 'assigned').length,
+        resolved: reports.filter(r => r.status === 'resolved').length
+    };
+
+    return `
+        <div class="card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h1>📋 All Reports Management</h1>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <select id="status-filter" onchange="filterReports()" class="form-control" style="width: auto;">
+                        <option value="">All Status</option>
+                        <option value="new">New</option>
+                        <option value="assigned">Assigned</option>
+                        <option value="resolved">Resolved</option>
+                    </select>
+                    <select id="category-filter" onchange="filterReports()" class="form-control" style="width: auto;">
+                        <option value="">All Categories</option>
+                        <option value="illegal_dumping">Illegal Dumping</option>
+                        <option value="overflowing_bin">Overflowing Bin</option>
+                        <option value="littering">Littering</option>
+                        <option value="hazardous_waste">Hazardous Waste</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="grid grid-4" style="margin-bottom: 2rem;">
+                <div class="card" style="text-align: center; border-left: 4px solid var(--primary-color); padding: 1rem;">
+                    <h3>${stats.total}</h3>
+                    <p style="margin: 0; color: var(--text-secondary);">Total Reports</p>
+                </div>
+                <div class="card" style="text-align: center; border-left: 4px solid #dc3545; padding: 1rem;">
+                    <h3>${stats.new}</h3>
+                    <p style="margin: 0; color: var(--text-secondary);">New</p>
+                </div>
+                <div class="card" style="text-align: center; border-left: 4px solid #fd7e14; padding: 1rem;">
+                    <h3>${stats.assigned}</h3>
+                    <p style="margin: 0; color: var(--text-secondary);">Assigned</p>
+                </div>
+                <div class="card" style="text-align: center; border-left: 4px solid #28a745; padding: 1rem;">
+                    <h3>${stats.resolved}</h3>
+                    <p style="margin: 0; color: var(--text-secondary);">Resolved</p>
+                </div>
+            </div>
+
+            <!-- Reports Table -->
+            <div class="table-container" style="overflow-x: auto; max-height: 600px;">
+                <table class="table" id="reports-table">
+                    <thead style="position: sticky; top: 0; background: white; z-index: 1;">
+                        <tr>
+                            <th>ID</th>
+                            <th>Date</th>
+                            <th>Category</th>
+                            <th>Reporter</th>
+                            <th>Location</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${reports.map(report => {
+                            const priority = report.category === 'hazardous_waste' ? 'High' : 
+                                           report.category === 'illegal_dumping' ? 'Medium' : 'Low';
+                            const priorityColor = priority === 'High' ? '#dc3545' : 
+                                                 priority === 'Medium' ? '#fd7e14' : '#28a745';
+                            
+                            return `
+                                <tr data-status="${report.status}" data-category="${report.category}">
+                                    <td style="font-family: monospace; font-size: 0.8rem;">#${report.id ? report.id.substring(0, 8) : 'N/A'}</td>
+                                    <td>${formatDate(report.created_at)}</td>
+                                    <td><span class="badge">${report.category.replace('_', ' ')}</span></td>
+                                    <td>
+                                        <div>
+                                            <strong>${report.users?.name || 'Unknown'}</strong>
+                                            <br><small style="color: var(--text-secondary);">${report.users?.email || ''}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <small style="font-family: monospace;">
+                                            ${report.lat.toFixed(4)}, ${report.lng.toFixed(4)}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <span class="badge ${report.status === 'resolved' ? 'success' : report.status === 'assigned' ? 'warning' : ''}">
+                                            ${report.status.toUpperCase()}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge" style="background-color: ${priorityColor}; color: white; font-size: 0.7rem;">
+                                            ${priority}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div style="display: flex; gap: 0.25rem; flex-wrap: wrap;">
+                                            <button class="btn btn-secondary" onclick="viewReport('${report.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.7rem;">👁️</button>
+                                            ${report.status === 'new' ? `<button class="btn btn-warning" onclick="assignReport('${report.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.7rem;" title="Assign">📝</button>` : ''}
+                                            ${report.status === 'assigned' ? `<button class="btn btn-success" onclick="resolveReport('${report.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.7rem;" title="Resolve">✅</button>` : ''}
+                                            <button class="btn btn-secondary" onclick="showOnMap('${report.lat}', '${report.lng}')" style="padding: 0.25rem 0.5rem; font-size: 0.7rem;" title="Show on Map">🗺️</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Export Options -->
+            <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <button class="btn btn-secondary" onclick="exportReportsCSV()" style="padding: 0.5rem 1rem;">
+                        📊 Export to CSV
+                    </button>
+                    <button class="btn btn-secondary" onclick="printReports()" style="padding: 0.5rem 1rem;">
+                        🖨️ Print Reports
+                    </button>
+                    <button class="btn btn-primary" onclick="refreshReports()" style="padding: 0.5rem 1rem;">
+                        🔄 Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+            // Filter functions for the reports table
+            function filterReports() {
+                const statusFilter = document.getElementById('status-filter').value;
+                const categoryFilter = document.getElementById('category-filter').value;
+                const rows = document.querySelectorAll('#reports-table tbody tr');
+                
+                rows.forEach(row => {
+                    const status = row.getAttribute('data-status');
+                    const category = row.getAttribute('data-category');
+                    
+                    const statusMatch = !statusFilter || status === statusFilter;
+                    const categoryMatch = !categoryFilter || category === categoryFilter;
+                    
+                    row.style.display = (statusMatch && categoryMatch) ? '' : 'none';
+                });
+            }
+            
+            function showOnMap(lat, lng) {
+                showToast('Opening map view...', 'info');
+                window.router.navigate('/map');
+            }
+            
+            function exportReportsCSV() {
+                showToast('CSV export feature coming soon!', 'info');
+            }
+            
+            function printReports() {
+                window.print();
+            }
+            
+            function refreshReports() {
+                window.router.handleRoute();
+                showToast('Reports refreshed!');
+            }
+        </script>
+    `;
+}
+
 // User management functions
 function showAddUserModal() {
     showModal('Add New User', `
@@ -1513,6 +1687,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.addUser = addUser;
         window.editUser = editUser;
         window.deleteUser = deleteUser;
+        window.renderAdminReports = renderAdminReports;
 
         // Register routes
         window.router.register('/login', () => renderLogin());
@@ -1524,7 +1699,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.router.register('/profile', () => renderProfile());
         window.router.register('/reports', async () => {
             if (window.auth.hasRole('admin')) {
-                return await window.dashboard.renderDashboard();
+                return await renderAdminReports(); // Use dedicated admin reports view
             } else if (window.auth.hasRole('worker')) {
                 return await renderWorkerReports();
             } else {
