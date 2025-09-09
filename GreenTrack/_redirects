@@ -1,8 +1,2 @@
-# Redirect root to landing page
-/ /index.html 200
-
-# Handle SPA routing
+# SPA routing for main application
 /ma1n.html/* /ma1n.html 200
-
-# Fallback
-/* /index.html 200
