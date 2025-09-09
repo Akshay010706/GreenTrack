@@ -21,6 +21,9 @@
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+    <!-- Environment Variables -->
+    <script src="inject-env.js"></script>
+
     <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -63,6 +66,6 @@
             <!-- Modal content will be populated by JavaScript -->
         </div>
     </div>
-   <script src="js/app-complete.js" onerror="document.getElementById('js-fallback').style.display='block';console.error('Failed to load app-complete.js');"></script>
+   <script src="js/app-supabase.js" onerror="document.getElementById('js-fallback').style.display='block';console.error('Failed to load app-supabase.js');"></script>
 </body>
 </html>
